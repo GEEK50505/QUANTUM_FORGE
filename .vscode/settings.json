@@ -1,0 +1,7 @@
+{
+  // Continue extension configuration — use OpenRouter and the Qwen-3-Coder free model.
+  // The extension should read the API key from the OPENROUTER_API_KEY environment variable.
+  "continue.provider": "openrouter",
+  "continue.openrouter.model": "qwen-3-coder-free",
+  "continue.openrouter.apiKeyEnv": "OPENROUTER_API_KEY"
+}

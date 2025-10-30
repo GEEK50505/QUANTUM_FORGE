@@ -6,6 +6,12 @@ import "flatpickr/dist/flatpickr.css";
 import App from "./App.tsx";
 import { AppWrapper } from "./components/common/PageMeta.tsx";
 import { ThemeProvider } from "./context/ThemeContext.tsx";
+import { startMockApi } from "./mocks/browser";
+
+// Start the mock API in development
+if (import.meta.env.DEV) {
+  startMockApi();
+}
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
