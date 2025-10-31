@@ -31,7 +31,17 @@ In the hybrid approach:
 """
 
 import numpy as np
-from typing import Tuple, List, Optional
+"""Stub: duplicate module moved to `backend.simulation`.
+
+Canonical implementation is under `backend/simulation/quantum_kernel`.
+Import via the top-level shim package:
+
+    from quantum_kernel.quantum_solver import QuantumSolver
+
+This file intentionally contains no implementation.
+"""
+
+__all__ = []
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import eigsh
 

@@ -18,7 +18,7 @@ This onboarding doc is a short checklist to get a new contributor up and running
 - python -m venv .venv
 - .\.venv\Scripts\Activate
 - pip install -r requirements.txt
-- Run a small smoke import: python -c "import src.classical_sim" (adjust path as needed)
+- Run a small smoke import: python -c "import classical_sim" (adjust path as needed)
 
 5) LLM / AI adapters
 - See `backend/ai/README.md` and `docs/api_contract.md` for the current adapter interfaces.
