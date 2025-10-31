@@ -1,2 +1,19 @@
+# Root ignore rules for QUANTUM_FORGE (UNDER ACTIVE DEVELOPMENT)
+node_modules/
+**/node_modules/
+dist/
+build/
+/.venv/
+*.pyc
+__pycache__/
+*.egg-info/
+env.local
+.env.local
+/.idea/
+.vscode/
+*.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 .env.local
 openrouter_keys_history.json

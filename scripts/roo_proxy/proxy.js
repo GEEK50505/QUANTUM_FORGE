@@ -53,7 +53,9 @@ async function forward(req, res) {
   keys = loadKeys();
   const pick = pickAvailableKey();
   if (!pick) {
-    res.status(502).json({ error: 'No available API keys (all are throttled or none configured)' });
+    // No available keys: tell clients to retry later with Retry-After header
+    res.setHeader('Retry-After', '60');
+    res.status(503).json({ error: 'No available API keys (all are throttled or none configured)', retry_after_seconds: 60 });
     return;
   }
 
@@ -82,7 +84,9 @@ async function forward(req, res) {
         // call forward again with a different key
         return forward(req, res);
       }
-      res.status(429).json({ error: 'Rate limited and no other keys available' });
+      // No keys available after marking this one — respond with 503 and Retry-After
+      res.setHeader('Retry-After', '60');
+      res.status(503).json({ error: 'Rate limited and no other keys available', retry_after_seconds: 60 });
       return;
     }
 
@@ -112,7 +116,8 @@ async function forward(req, res) {
     saveKeys(keys);
     const otherPick = pickAvailableKey();
     if (otherPick) { return forward(req, res); }
-    res.status(502).json({ error: 'Provider proxy error', details: msg });
+    res.setHeader('Retry-After', '30');
+    res.status(503).json({ error: 'Provider proxy error and no keys available', details: msg, retry_after_seconds: 30 });
   }
 }
 

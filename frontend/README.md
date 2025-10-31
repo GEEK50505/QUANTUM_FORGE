@@ -1,230 +1,98 @@
-# Quantum Forge - Hybrid Quantum-Classical Simulation Platform
+# Frontend Application - Under Active Development
 
-This repository has been transformed from the TailAdmin React template into the frontend for Quantum Forge - a hybrid quantum-classical simulation platform for computational chemistry research.
+## 🖥️ Overview
 
-## About Quantum Forge
+This directory contains the React-based web frontend for the Quantum Forge platform, providing an intuitive user interface for hybrid quantum-classical simulations.
 
-Quantum Forge is a sophisticated platform that enables scientists to:
-- Run hybrid quantum-classical molecular simulations
-- Compare different computational methods
-- Analyze results and visualize quantum chemistry data
-- Manage datasets and computational models
+**Status: Under Active Development** - This is a pre-beta development area. Features and APIs are subject to change.
 
-## Documentation
-
-For detailed information about using Quantum Forge, please refer to the following documentation files:
-
-- [FRONTEND_README.md](docs/FRONTEND_README.md) - Technical setup and development guide
-- [WALKTHROUGH.md](docs/WALKTHROUGH.md) - Step-by-step guide for non-programmers
-- [CHANGELOG.md](CHANGELOG.md) - Development history and features
-- [COMMENT_POLICY.md](docs/COMMENT_POLICY.md) - Explanation of permanent educational comments
-
-## Quick Start
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Start the development server:
-   ```bash
-   npm run dev
-   ```
-
-3. Open your browser to http://localhost:5173
-
-## Features
-
-- Dashboard with KPI overview and simulation controls
-- Complete simulation workflow (create, run, analyze)
-- Data management (datasets, models, experiments)
-- User authentication and profile management
-- Responsive design with dark/light mode support
-- Comprehensive mock data system for development
-
-With TailAdmin, you get access to all the necessary dashboard UI components, elements, and pages required to build a
-feature-rich and complete dashboard or admin panel. Whether you're building dashboard or admin panel for a complex web
-application or a simple website, TailAdmin is the perfect solution to help you get up and running quickly.
-
-![TailAdmin React.js Dashboard Preview](./banner.png)
-
-## Overview
-
-TailAdmin provides essential UI components and layouts for building feature-rich, data-driven admin dashboards and
-control panels. It's built on:
-
-- React 19
-- TypeScript
-- Tailwind CSS
-
-### Quick Links
-
-- [✨ Visit Website](https://tailadmin.com)
-- [📄 Documentation](https://tailadmin.com/docs)
-- [⬇️ Download](https://tailadmin.com/download)
-- [🖌️ Figma Design File (Community Edition)](https://www.figma.com/community/file/1214477970819985778)
-- [⚡ Get PRO Version](https://tailadmin.com/pricing)
-
-### Demos
-
-- [Free Version](https://free-react-demo.tailadmin.com/)
-- [Pro Version](https://react-demo.tailadmin.com)
-
-### Other Versions
-
-- [HTML Version](https://github.com/TailAdmin/tailadmin-free-tailwind-dashboard-template)
-- [Next.js Version](https://github.com/TailAdmin/free-nextjs-admin-dashboard)
-- [Vue.js Version](https://github.com/TailAdmin/vue-tailwind-admin-dashboard)
-
-## Installation
-
-### Prerequisites
-
-To get started with TailAdmin, ensure you have the following prerequisites installed and set up:
-
-- Node.js 18.x or later (recommended to use Node.js 20.x or later)
-
-### Cloning the Repository
-
-Clone the repository using the following command:
+## 📁 Directory Structure
 
 ```bash
-git clone https://github.com/TailAdmin/free-react-tailwind-admin-dashboard.git
+frontend/
+├── src/           # Source code for React components and application logic
+├── public/         # Static assets and public files
+├── docs/          # Frontend-specific documentation
+├── scripts/       # Build and deployment scripts
+├── tests/         # Frontend unit and integration tests
+├── components/    # Reusable UI components
+├── pages/        # Application pages and views
+├── services/     # API service integrations
+├── hooks/        # Custom React hooks
+├── context/       # React context providers
+├── layout/       # Application layout components
+├── utils/        # Utility functions and helpers
+└── README.md     # This file
 ```
 
-> Windows Users: place the repository near the root of your drive if you face issues while cloning.
+## 🎯 Purpose
 
-1. Install dependencies:
+The frontend application provides a user-friendly interface for:
 
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+- **Simulation Management**: Create, configure, and monitor simulations
+- **Visualization**: Interactive plots and 3D visualizations of results
+- **Data Exploration**: Browse and analyze simulation datasets
+- **Collaboration**: Share results and collaborate with team members
 
-   > Use the `--legacy-peer-deps` flag, if you face issues while installing.
+## 🚧 Current Development Status
 
-2. Start the development server:
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   ```
+This directory is actively being developed as part of the Quantum Forge 2.0 refactoring effort. Current focus areas:
 
-## Components
+- Implementation of responsive React components
+- Integration with backend API services
+- Development of scientific visualization tools
+- Creation of intuitive user workflows
 
-TailAdmin is a pre-designed starting point for building a web-based dashboard using React.js and Tailwind CSS. The
-template includes:
+## 📚 Key Components
 
-- Sophisticated and accessible sidebar
-- Data visualization components
-- Prebuilt profile management and 404 page
-- Tables and Charts(Line and Bar)
-- Authentication forms and input elements
-- Alerts, Dropdowns, Modals, Buttons and more
-- Can't forget Dark Mode 🕶️
+### Core Application (`src/`)
+- Main application component and routing
+- State management and data flow
+- Theme and styling configuration
+- Performance optimization
 
-All components are built with React and styled using Tailwind CSS for easy customization.
+### UI Components (`src/components/`)
+- Dashboard widgets and cards
+- Simulation controls and forms
+- Data tables and charts
+- Modal dialogs and notifications
 
-## Feature Comparison
+### Pages and Views (`src/pages/`)
+- Dashboard overview and analytics
+- Simulation creation and management
+- Results visualization and analysis
+- User profile and settings
 
-### Free Version
+### Services Integration (`src/services/`)
+- API client implementations
+- Authentication and session management
+- Data fetching and caching
+- Error handling and retry logic
 
-- 1 Unique Dashboard
-- 30+ dashboard components
-- 50+ UI elements
-- Basic Figma design files
-- Community support
+### Custom Hooks (`src/hooks/`)
+- Data fetching and state management hooks
+- Form validation and submission hooks
+- Animation and interaction hooks
+- Performance optimization hooks
 
-### Pro Version
+## ⚠️ Important Notes
 
-- 5 Unique Dashboards: Analytics, Ecommerce, Marketing, CRM, Stocks (more coming soon)
-- 400+ dashboard components and UI elements
-- Complete Figma design file
-- Email support
+- **Pre-Beta Status**: All components are under active development
+- **APIs Unstable**: Interfaces may change without notice
+- **Documentation Incomplete**: Educational materials being actively created
+- **Dependencies Evolving**: Package requirements subject to change
 
-To learn more about pro version features and pricing, visit our [pricing page](https://tailadmin.com/pricing).
+## 🤝 Contribution Guidelines
 
-## Changelog
+We welcome contributions from the frontend development community. Please:
 
-### Version 2.0.2 - [March 25, 2025]
+1. Review the main project contribution guidelines
+2. Coordinate with maintainers before major changes
+3. Follow educational documentation standards
+4. Ensure compatibility with backend services
 
-- Upgraded to React 19
-- Included overrides for packages to prevent peer dependency errors.
-- Migrated from react-flatpickr to flatpickr package for React 19 support
+---
 
-### Version 2.0.1 - [February 27, 2025]
+*"Making quantum-classical simulation accessible through intuitive web interfaces"*
 
-#### Update Overview
-
-- Upgraded to Tailwind CSS v4 for better performance and efficiency.
-- Updated class usage to match the latest syntax and features.
-- Replaced deprecated class and optimized styles.
-
-#### Next Steps
-
-- Run npm install or yarn install to update dependencies.
-- Check for any style changes or compatibility issues.
-- Refer to the Tailwind CSS v4 [Migration Guide](https://tailwindcss.com/docs/upgrade-guide) on this release. if needed.
-- This update keeps the project up to date with the latest Tailwind improvements. 🚀
-
-### Version 2.0.0 - [February 2025]
-
-A major update with comprehensive redesign and modern React patterns implementation.
-
-#### Major Improvements
-
-- Complete UI redesign with modern React patterns
-- New features: collapsible sidebar, chat, and calendar
-- Improved performance and accessibility
-- Updated data visualization using ApexCharts
-
-#### Key Features
-
-- Redesigned dashboards (Ecommerce, Analytics, Marketing, CRM)
-- Enhanced navigation with React Router integration
-- Advanced tables with sorting and filtering
-- Calendar with drag-and-drop support
-- New UI components and improved existing ones
-
-#### Breaking Changes
-
-- Updated sidebar component API
-- Migrated charts to ApexCharts
-- Revised authentication system
-
-[Read more](https://tailadmin.com/docs/update-logs/react) on this release.
-
-### Version 1.3.7 - [June 20, 2024]
-
-#### Enhancements
-
-1. Remove Repetition of DefaultLayout in every Pages
-2. Add ClickOutside Component for reduce repeated functionality in Header Message, Notification and User Dropdowns.
-
-### Version 1.3.6 - [Jan 31, 2024]
-
-#### Enhancements
-
-1. Integrate flatpickr in [Date Picker/Form Elements]
-2. Change color after select an option [Select Element/Form Elements].
-3. Make it functional [Multiselect Dropdown/Form Elements].
-4. Make best value editable [Pricing Table One/Pricing Table].
-5. Rearrange Folder structure.
-
-### Version 1.2.0 - [Apr 28, 2023]
-
-- Add Typescript in TailAdmin React.
-
-### Version 1.0.0 - Initial Release - [Mar 13, 2023]
-
-- Initial release of TailAdmin React.
-
-## License
-
-TailAdmin React.js Free Version is released under the MIT License.
-
-## Support
-
-If you find this project helpful, please consider giving it a star on GitHub. Your support helps us continue developing
-and maintaining this template.
+**Next steps**: Implementation of core UI components and backend integration.
