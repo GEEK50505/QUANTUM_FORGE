@@ -17,3 +17,8 @@ yarn.lock
 pnpm-lock.yaml
 .env.local
 openrouter_keys_history.json
+
+# Staged template sources (added by merge helper). Keep these ignored so they don't get re-added accidentally
+/frontend/template_sources/
+/frontend/templates/
+/react-tailwind-frontend-main-template-files/

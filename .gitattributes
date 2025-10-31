@@ -1,0 +1,33 @@
+# Normalize line endings and set binary files
+* text=auto
+
+# Enforce LF for text files used in CI and cross-platform development
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+
+# Treat common binary formats as binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.mp4 binary
+*.mp3 binary
+
+# SVGs are text (so they diff nicely)
+*.svg text
+
+# Prevent Git from attempting to normalize generated lockfiles
+package-lock.json eol=lf
+pnpm-lock.yaml eol=lf
+yarn.lock eol=lf
