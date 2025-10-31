@@ -1,232 +1,338 @@
-# API Contracts and Interfaces - Under Active Development
+# Quantum Forge API Contracts
 
-## 📡 Overview
+## Overview
 
-This document defines the API contracts and interfaces for the Quantum Forge platform, establishing clear communication protocols between all system components.
+This document defines the API contracts and interfaces for the Quantum Forge platform, covering both backend services and frontend interactions.
 
-**Status: Under Active Development** - This is a pre-beta development area. APIs and interfaces are subject to change.
+**⚠️ NOTE: This document is currently under active development. API contracts are subject to change.**
 
-## 📁 Document Structure
+## Table of Contents
 
-```bash
-API Contracts:
-├── Backend Services API
-├── Frontend Integration API
-├── AI/ML Service Interfaces
-├── Simulation Engine APIs
-├── Data Management APIs
-└── Authentication & Security
+1. [Backend API Contracts](#backend-api-contracts)
+2. [Frontend API Contracts](#frontend-api-contracts)
+3. [QPU Integration Contracts](#qpu-integration-contracts)
+4. [Data Models](#data-models)
+5. [Authentication](#authentication)
+6. [Error Handling](#error-handling)
+
+## Backend API Contracts
+
+### Classical Simulation Service
+
+#### POST /api/v1/simulation/classical
+Start a classical molecular dynamics simulation
+
+**Request:**
+```json
+{
+  "num_particles": 100,
+  "box_size": 10.0,
+  "temperature": 300.0,
+  "simulation_time": 1000,
+  "time_step": 0.001
+}
 ```
 
-## 🎯 Purpose
-
-API contracts ensure consistent, reliable communication between system components:
-
-- **Interoperability**: Standardized interfaces between services
-- **Documentation**: Clear specifications for developers
-- **Validation**: Contract testing and verification
-- **Evolution**: Versioned APIs with backward compatibility
-
-## 🚧 Current Development Status
-
-This document is actively being developed as part of the Quantum Forge 2.0 refactoring effort. Current focus areas:
-
-- Definition of core REST API endpoints
-- Specification of GraphQL schema interfaces
-- Development of service-to-service communication protocols
-- Implementation of authentication and authorization flows
-
-## 📚 Key API Contracts
-
-### Backend Services API
-
-#### Simulation Management
-```
-POST /api/v1/simulations
-- Create new simulation job
-- Request: { simulation_type, parameters, config }
-- Response: { job_id, status, created_at }
-
-GET /api/v1/simulations/{job_id}
-- Get simulation status and results
-- Response: { status, progress, results, metadata }
-
-GET /api/v1/simulations
-- List all simulations
-- Query params: status, user_id, limit, offset
-- Response: [ { job_id, status, created_at, type } ]
+**Response:**
+```json
+{
+  "simulation_id": "uuid-string",
+  "status": "running",
+  "start_time": "ISO8601-timestamp"
+}
 ```
 
-#### Data Management
-```
-POST /api/v1/data/upload
-- Upload simulation data
-- Request: multipart/form-data with file and metadata
-- Response: { data_id, upload_url, status }
+#### GET /api/v1/simulation/classical/{simulation_id}
+Get classical simulation status and results
 
-GET /api/v1/data/{data_id}
-- Retrieve simulation data
-- Response: { data, metadata, provenance }
-
-GET /api/v1/data
-- Query simulation datasets
-- Query params: tags, date_range, user_id
-- Response: [ { data_id, metadata, size, created_at } ]
-```
-
-### Frontend Integration API
-
-#### User Interface Services
-```
-GET /api/v1/ui/dashboard
-- Get dashboard widgets and analytics
-- Response: { widgets, recent_simulations, system_status }
-
-GET /api/v1/ui/simulation-config/{type}
-- Get simulation configuration UI schema
-- Response: { form_schema, default_values, validation_rules }
-
-POST /api/v1/ui/visualization
-- Generate visualization data
-- Request: { data_id, chart_type, parameters }
-- Response: { chart_data, metadata }
+**Response:**
+```json
+{
+  "simulation_id": "uuid-string",
+  "status": "completed",
+  "progress": 100,
+  "results": {
+    "positions": [[x1, y1, z1], [x2, y2, z2]],
+    "energies": [1.23, 1.25, 1.24],
+    "temperature": 300.0
+  }
+}
 ```
 
-### AI/ML Service Interfaces
+### Quantum Solver Service
 
-#### Model Management
-```
-POST /api/v1/ai/models/train
-- Start model training job
-- Request: { model_type, training_data, hyperparameters }
-- Response: { job_id, status, config }
+#### POST /api/v1/simulation/quantum
+Start a quantum mechanical calculation
 
-GET /api/v1/ai/models/{model_id}
-- Get model information and status
-- Response: { status, metrics, version, created_at }
-
-POST /api/v1/ai/models/{model_id}/predict
-- Make predictions using trained model
-- Request: { input_data, parameters }
-- Response: { predictions, confidence, metadata }
+**Request:**
+```json
+{
+  "molecule": "H2",
+  "positions": [[0.0, 0.0, 0.0], [0.74, 0.0, 0.0]],
+  "method": "hartree-fock",
+  "basis_set": "sto-3g"
+}
 ```
 
-### Simulation Engine APIs
-
-#### Classical Simulation Interface
-```
-POST /api/v1/simulation/classical/run
-- Execute classical molecular dynamics simulation
-- Request: { particles, box_size, temperature, steps, dt }
-- Response: { job_id, initial_positions, trajectory }
-
-GET /api/v1/simulation/classical/{job_id}/results
-- Get classical simulation results
-- Response: { positions_history, energy_history, velocities }
+**Response:**
+```json
+{
+  "calculation_id": "uuid-string",
+  "status": "running",
+  "start_time": "ISO8601-timestamp"
+}
 ```
 
-#### Quantum Simulation Interface
-```
-POST /api/v1/simulation/quantum/run
-- Execute quantum mechanical calculation
-- Request: { atomic_positions, electrons, basis_set, method }
-- Response: { job_id, wavefunctions, energies }
+### Hybrid Pipeline Service
 
-GET /api/v1/simulation/quantum/{job_id}/results
-- Get quantum simulation results
-- Response: { eigenvalues, eigenvectors, molecular_orbitals }
-```
+#### POST /api/v1/simulation/hybrid
+Start a hybrid quantum-classical simulation
 
-#### Hybrid Simulation Interface
-```
-POST /api/v1/simulation/hybrid/run
-- Execute hybrid quantum-classical simulation
-- Request: { classical_params, quantum_params, coupling_strategy }
-- Response: { job_id, hybrid_results, execution_plan }
-
-GET /api/v1/simulation/hybrid/{job_id}/results
-- Get hybrid simulation results
-- Response: { combined_data, classical_contributions, quantum_corrections }
-```
-
-### Data Management APIs
-
-#### Database Interface
-```
-POST /api/v1/db/query
-- Execute database query
-- Request: { query, parameters, format }
-- Response: { results, metadata, execution_time }
-
-POST /api/v1/db/store
-- Store data in database
-- Request: { table, data, conflict_resolution }
-- Response: { record_id, status, timestamp }
+**Request:**
+```json
+{
+  "system": {
+    "classical_particles": 1000,
+    "quantum_regions": [
+      {
+        "region_id": "active_site",
+        "particles": [1, 2, 3, 4],
+        "method": "full-ci"
+      }
+    ]
+  },
+  "parameters": {
+    "classical_steps": 1000,
+    "quantum_frequency": 10,
+    "time_step": 0.001
+  }
+}
 ```
 
-#### File Storage Interface
-```
-POST /api/v1/storage/upload
-- Upload file to storage
-- Request: multipart/form-data
-- Response: { file_id, url, metadata }
+## Frontend API Contracts
 
-GET /api/v1/storage/{file_id}
-- Download file from storage
-- Response: file content with appropriate headers
-```
+### Simulation Management
 
-### Authentication & Security
+#### GET /api/v1/frontend/simulations
+Get list of simulations for dashboard display
 
-#### User Management
-```
-POST /api/v1/auth/register
-- Register new user
-- Request: { username, email, password, profile }
-- Response: { user_id, token, status }
-
-POST /api/v1/auth/login
-- Authenticate user
-- Request: { username, password }
-- Response: { token, user_info, expires_in }
-
-POST /api/v1/auth/logout
-- End user session
-- Request: { token }
-- Response: { status, message }
+**Response:**
+```json
+{
+  "simulations": [
+    {
+      "id": "uuid-string",
+      "name": "H2 Hybrid Simulation",
+      "type": "hybrid",
+      "status": "running",
+      "progress": 75,
+      "start_time": "ISO8601-timestamp",
+      "estimated_completion": "ISO8601-timestamp"
+    }
+  ]
+}
 ```
 
-#### Authorization
+#### GET /api/v1/frontend/simulations/{id}/results
+Get simulation results for visualization
+
+**Response:**
+```json
+{
+  "id": "uuid-string",
+  "results": {
+    "classical": {
+      "trajectory": [...],
+      "energies": [...],
+      "temperature_profile": [...]
+    },
+    "quantum": {
+      "orbitals": [...],
+      "energies": [...],
+      "densities": [...]
+    },
+    "hybrid": {
+      "combined_results": [...]
+    }
+  }
+}
 ```
-GET /api/v1/auth/permissions
-- Get user permissions
-- Response: { user_id, roles, permissions, resources }
 
-POST /api/v1/auth/authorize
-- Check authorization for action
-- Request: { user_id, action, resource }
-- Response: { authorized, reason, permissions }
+## QPU Integration Contracts
+
+### Quantum Processing Unit Interface
+
+#### POST /api/v1/qpu/submit
+Submit quantum circuit for execution
+
+**Request:**
+```json
+{
+  "circuit": "openqasm-string",
+  "shots": 1000,
+  "backend": "simulator|ibm-quantum|ionq"
+}
 ```
 
-## ⚠️ Important Notes
+**Response:**
+```json
+{
+  "job_id": "qpu-job-uuid",
+  "status": "submitted",
+  "submission_time": "ISO8601-timestamp"
+}
+```
 
-- **Pre-Beta Status**: All APIs are under active development
-- **Interfaces Unstable**: Endpoints and schemas may change
-- **Documentation Incomplete**: Specifications being actively refined
-- **Versioning Planned**: Future support for API version management
+#### GET /api/v1/qpu/results/{job_id}
+Get quantum computation results
 
-## 🤝 Implementation Guidelines
+**Response:**
+```json
+{
+  "job_id": "qpu-job-uuid",
+  "status": "completed",
+  "results": {
+    "counts": {"00": 500, "01": 250, "10": 200, "11": 50},
+    "probabilities": {"00": 0.5, "01": 0.25, "10": 0.2, "11": 0.05},
+    "execution_time": 12.5
+  }
+}
+```
 
-When implementing these API contracts:
+## Data Models
 
-1. **Follow REST Principles**: Use standard HTTP methods and status codes
-2. **Validate Input**: Implement comprehensive request validation
-3. **Handle Errors Gracefully**: Provide meaningful error messages
-4. **Document Changes**: Keep this contract document updated
-5. **Test Thoroughly**: Implement contract testing for all endpoints
+### Simulation Model
 
----
+```typescript
+interface Simulation {
+  id: string;
+  name: string;
+  type: 'classical' | 'quantum' | 'hybrid';
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  progress: number; // 0-100
+  parameters: SimulationParameters;
+  results?: SimulationResults;
+  created_at: string; // ISO8601
+  updated_at: string; // ISO8601
+  completed_at?: string; // ISO8601
+}
 
-*"Establishing clear communication protocols for quantum-classical simulation services"*
+interface SimulationParameters {
+  [key: string]: any; // Type-specific parameters
+}
 
-**Next steps**: Implementation of core API endpoints and contract testing frameworks.
+interface SimulationResults {
+  classical?: ClassicalResults;
+  quantum?: QuantumResults;
+  hybrid?: HybridResults;
+}
+```
+
+### Classical Results
+
+```typescript
+interface ClassicalResults {
+  positions: number[][][]; // [timestep][particle][x,y,z]
+  velocities: number[][][]; // [timestep][particle][vx,vy,vz]
+  energies: {
+    kinetic: number[];
+    potential: number[];
+    total: number[];
+  };
+  temperature: number[];
+}
+```
+
+### Quantum Results
+
+```typescript
+interface QuantumResults {
+  eigenvalues: number[];
+  eigenvectors: number[][];
+  orbitals: {
+    energies: number[];
+    coefficients: number[][];
+  };
+  density_matrices: number[][][];
+}
+```
+
+## Authentication
+
+### JWT Token Authentication
+
+All API endpoints require a valid JWT token in the Authorization header:
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+#### POST /api/v1/auth/login
+User login
+
+**Request:**
+```json
+{
+  "username": "string",
+  "password": "string"
+}
+```
+
+**Response:**
+```json
+{
+  "token": "jwt-token-string",
+  "expires_in": 3600,
+  "user": {
+    "id": "user-uuid",
+    "username": "string",
+    "email": "string",
+    "role": "user|admin"
+  }
+}
+```
+
+## Error Handling
+
+### Standard Error Response Format
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {
+      "field": "specific field if applicable",
+      "value": "invalid value if applicable"
+    }
+  }
+}
+```
+
+### Common Error Codes
+
+- `VALIDATION_ERROR`: Request validation failed
+- `AUTHENTICATION_ERROR`: Invalid or missing authentication
+- `AUTHORIZATION_ERROR`: Insufficient permissions
+- `NOT_FOUND`: Resource not found
+- `INTERNAL_ERROR`: Server-side error
+- `SERVICE_UNAVAILABLE`: External service unavailable
+
+## Development Status
+
+This API contract is under active development. The following areas are currently being refined:
+
+- **Classical Simulation API**: Under development
+- **Quantum Solver API**: Under development
+- **Hybrid Pipeline API**: Under development
+- **Frontend Integration**: Under development
+- **QPU Integration**: Under development
+
+## Version History
+
+- **v0.1.0**: Initial draft (current)
+- **v1.0.0**: Planned stable release
+
+## Contributing
+
+API contract changes should be carefully considered and documented. All breaking changes require version increment and migration documentation.

@@ -11,6 +11,8 @@
 
 Quantum Forge is a revolutionary platform for atom-accurate simulation of materials and electronic devices. It combines the speed of classical molecular dynamics with the accuracy of quantum mechanical calculations.
 
+**⚠️ NOTE: This project is currently under active development. Features and APIs are subject to change.**
+
 ### 🔬 What is Hybrid Simulation?
 
 Think of hybrid simulation like a "multi-scale microscope":
@@ -29,16 +31,21 @@ This approach gets the best of both worlds:
 
 ```
 QUANTUM_FORGE/
-├── src/
-│   ├── classical_sim/     # Classical molecular dynamics simulator
-│   ├── quantum_kernel/    # Quantum mechanical solver
-│   ├── hybrid_pipeline/   # Hybrid simulation orchestrator
-│   └── utils/            # Visualization and analysis tools
-├── notebooks/            # Jupyter notebooks for interactive exploration
-├── data/                 # Simulation data and results
-├── docs/                 # Documentation and tutorials
-├── requirements.txt      # Python dependencies
-└── README.md             # This file
+├── backend/                  # Core simulation backend (under active development)
+│   ├── simulation/          # Main simulation modules
+│   │   ├── classical_sim/   # Classical molecular dynamics simulator
+│   │   ├── quantum_kernel/  # Quantum mechanical solver
+│   │   ├── hybrid_pipeline/ # Hybrid simulation orchestrator
+│   │   └── utils/          # Visualization and analysis tools
+│   └── db/                  # Database and persistence layer
+├── frontend/                # React-based web interface (under active development)
+├── notebooks/               # Jupyter notebooks for interactive exploration
+├── docs/                    # Documentation and tutorials
+├── scripts/                 # Development and deployment scripts
+├── data/                    # Simulation data and results
+├── tests/                   # Test suite
+├── requirements.txt         # Python dependencies
+└── README.md               # This file
 ```
 
 ---
@@ -50,8 +57,8 @@ QUANTUM_FORGE/
 ```bash
 # Create virtual environment (recommended)
 python -m venv quantum_forge_env
-quantum_forge_env\Scripts\activate  # Windows
-# source quantum_forge_env/bin/activate  # Linux/Mac
+source quantum_forge_env/bin/activate  # Linux/Mac
+# quantum_forge_env\Scripts\activate  # Windows
 
 # Install required packages
 pip install -r requirements.txt
@@ -61,40 +68,44 @@ pip install -r requirements.txt
 
 ```python
 # Run classical simulation demo
-python -m src.classical_sim.classical_simulator
+python -m backend.simulation.classical_sim.classical_simulator
 
 # Run quantum calculation demo
-python -m src.quantum_kernel.quantum_solver
+python -m backend.simulation.quantum_kernel.quantum_solver
 
 # Run hybrid simulation demo
-python -m src.hybrid_pipeline.hybrid_simulator
+python -m backend.simulation.hybrid_pipeline.hybrid_simulator
 ```
 
 ---
 
 ## 🧠 Core Modules
 
-### 1. Classical Simulator (`src/classical_sim/`)
+### 1. Classical Simulator (`backend/simulation/classical_sim/`)
 - **Purpose**: Fast, large-scale particle motion simulation
 - **Methods**: Molecular dynamics with Newton's laws
 - **Uses**: Structural dynamics, thermal motion, large systems
 - **Speed**: Very fast (thousands of atoms in real-time)
+- **Status**: Under active development
 
-### 2. Quantum Solver (`src/quantum_kernel/`)
+### 2. Quantum Solver (`backend/simulation/quantum_kernel/`)
 - **Purpose**: Accurate electronic structure calculations
 - **Methods**: Solving the Schrödinger equation
 - **Uses**: Chemical reactions, electronic properties, bonding
 - **Accuracy**: Highly accurate but computationally expensive
+- **Status**: Under active development
 
-### 3. Hybrid Pipeline (`src/hybrid_pipeline/`)
+### 3. Hybrid Pipeline (`backend/simulation/hybrid_pipeline/`)
 - **Purpose**: Orchestrates classical and quantum simulations
 - **Workflow**: Classical scaffold → Quantum detail → Combined results
 - **Benefits**: Efficiency of classical + Accuracy of quantum
+- **Status**: Under active development
 
-### 4. Visualization Tools (`src/utils/`)
+### 4. Visualization Tools (`backend/simulation/utils/`)
 - **Purpose**: Transform numerical data into intuitive insights
 - **Features**: Energy plots, trajectory visualization, orbital diagrams
 - **Importance**: Essential for understanding complex simulation results
+- **Status**: Under active development
 
 ---
 
@@ -108,7 +119,7 @@ The platform includes a complete example of hybrid simulation for the H₂ molec
 
 ```python
 # Simple hybrid H₂ simulation
-from src.hybrid_pipeline.hybrid_simulator import HybridSimulator
+from backend.simulation.hybrid_pipeline.hybrid_simulator import HybridSimulator
 
 # Create hybrid simulator for H₂
 simulator = HybridSimulator(
@@ -157,20 +168,20 @@ This makes Quantum Forge perfect for:
 python -m pytest tests/
 
 # Format code
-python -m black src/
+python -m black backend/
 ```
 
 ---
 
 ## 🌟 Key Features
 
-| Feature | Description |
-|---------|-------------|
-| **Hybrid Architecture** | Best of classical and quantum methods |
-| **Educational Focus** | Detailed explanations for learning |
-| **Modular Design** | Easy to extend and customize |
-| **Visualization Tools** | Transform data into insights |
-| **AI Integration** | Future-ready for machine learning |
+| Feature | Description | Status |
+|---------|-------------|--------|
+| **Hybrid Architecture** | Best of classical and quantum methods | Under Development |
+| **Educational Focus** | Detailed explanations for learning | Under Development |
+| **Modular Design** | Easy to extend and customize | Under Development |
+| **Visualization Tools** | Transform data into insights | Under Development |
+| **AI Integration** | Future-ready for machine learning | Planned |
 
 ---
 
@@ -201,6 +212,8 @@ Quantum Forge welcomes contributions from:
 - Educators and students
 - Industry professionals
 
+**⚠️ Important**: This project is currently under active development. Please check the current status before contributing.
+
 ---
 
 ## 📄 License
@@ -211,4 +224,4 @@ Quantum Forge is open-source software for advancing scientific computing and edu
 
 *"Democratizing complex simulation and accelerating discovery"*
 
-[Multi-tenant SaaS, API, and on-prem deployment ready]
+[Multi-tenant SaaS, API, and on-prem deployment ready - under development]

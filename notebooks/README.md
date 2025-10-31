@@ -1,25 +1,39 @@
-```markdown
-# Notebooks (notebooks/) — UNDER ACTIVE DEVELOPMENT
+# Notebooks
 
-Role:
-- Interactive examples, tutorials, and exploratory experiments. Notebooks are *educational-first* and live examples of the platform's capabilities.
+## Overview
 
-Guidelines:
-- Keep notebooks small and focused. Use clear headings and short text explaining the experiment and expected outputs.
-- Where notebooks are used for long-running experiments, extract core functionality into `ai/` or `backend/` modules so it can be tested.
-- Mark notebooks with their purpose and the date.
+This directory contains Jupyter notebooks and interactive examples for exploring Quantum Forge capabilities.
 
-Development status:
-- Example notebooks are UNDER ACTIVE DEVELOPMENT; treat outputs as non-authoritative and for demo/education.
+**⚠️ NOTE: This directory and all its contents are currently under active development. Notebooks and examples are subject to change.**
+
+## Structure
 
 ```
-# Notebooks (notebooks/) — UNDER ACTIVE DEVELOPMENT
+notebooks/
+├── tutorials/           # Step-by-step tutorials
+├── examples/           # Practical examples and use cases
+├── research/          # Research-oriented notebooks
+└── exploration/       # Experimental and exploratory notebooks
+```
 
-Jupyter notebooks used for interactive exploration, demonstrations, and lightweight experiments.
+## Development Status
 
-Guidelines:
-- Keep notebooks focused and reproducible: pin random seeds and record environment information.
-- Large datasets should not be committed; instead reference them in `data/` or external storage.
-- Add a short README in each notebook subfolder describing purpose and kernel requirements.
+- **Tutorials**: Under active development
+- **Examples**: Under active development
+- **Research Notebooks**: Under active development
+- **Exploration Notebooks**: Under active development
 
-Status: UNDER ACTIVE DEVELOPMENT
+## Key Notebooks
+
+- **h2_hybrid_simulation.py**: Complete H₂ hybrid simulation example
+- **classical_dynamics.ipynb**: Classical molecular dynamics exploration
+- **quantum_chemistry.ipynb**: Quantum mechanical calculations
+- **hybrid_approach.ipynb**: Combined classical-quantum workflows
+
+## Usage Guidelines
+
+Notebooks are designed to be educational and interactive. They demonstrate key concepts and provide hands-on experience with the platform's capabilities.
+
+## Contributing
+
+Notebook contributions should focus on educational value and clear explanations of scientific concepts.

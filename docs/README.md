@@ -1,92 +1,38 @@
-# Documentation - Under Active Development
+# Documentation
 
-## 📚 Overview
+## Overview
 
-This directory contains comprehensive documentation for the Quantum Forge platform, including user guides, API references, and educational materials.
+This directory contains comprehensive documentation for the Quantum Forge platform, including architecture decisions, tutorials, and API references.
 
-**Status: Under Active Development** - This is a pre-beta development area. Documentation is actively being created and updated.
+**⚠️ NOTE: This directory and all its contents are currently under active development. Documentation is incomplete and subject to change.**
 
-## 📁 Directory Structure
+## Structure
 
-```bash
+```
 docs/
-├── api/           # API contract documentation and references
-├── user-guides/   # User manuals and how-to guides
-├── tutorials/     # Step-by-step tutorials and examples
-├── architecture/  # System architecture and design documents
-├── contributing/   # Contribution guidelines and development docs
-├── changelog/     # Release notes and version history
-└── README.md     # This file
+├── api contracts/       # API specifications and contracts
+├── architecture/        # System architecture documentation
+├── tutorials/           # Step-by-step guides
+├── reference/           # Technical reference materials
+└── guides/              # Best practices and development guides
 ```
 
-## 🎯 Purpose
+## Development Status
 
-The documentation serves multiple audiences and purposes:
+- **API Contracts**: Under active development
+- **Architecture Documentation**: Under active development
+- **Tutorials**: Under active development
+- **Reference Materials**: Under active development
+- **Development Guides**: Under active development
 
-- **User Education**: Comprehensive guides for platform users
-- **Developer Reference**: API documentation and integration guides
-- **Educational Resource**: Learning materials for quantum-classical simulation
-- **Community Building**: Contribution guidelines and best practices
+## Documentation Guidelines
 
-## 🚧 Current Development Status
+All documentation follows these principles:
+- **Educational Focus**: Clear explanations of scientific concepts
+- **Practical Examples**: Real-world use cases and code samples
+- **Consistent Structure**: Standardized formatting and organization
+- **Regular Updates**: Kept current with code changes
 
-This directory is actively being developed as part of the Quantum Forge 2.0 refactoring effort. Current focus areas:
+## Contributing
 
-- Creation of comprehensive API documentation
-- Development of educational tutorials and examples
-- Implementation of user onboarding materials
-- Integration with automated documentation generation
-
-## 📚 Key Components (Planned)
-
-### API Documentation (`docs/api/`)
-- REST API reference and endpoints
-- GraphQL schema documentation
-- Client library guides
-- Authentication and authorization
-
-### User Guides (`docs/user-guides/`)
-- Getting started tutorials
-- Simulation workflow documentation
-- Visualization and analysis guides
-- Troubleshooting and FAQ
-
-### Educational Tutorials (`docs/tutorials/`)
-- Quantum-classical simulation fundamentals
-- Hands-on examples and exercises
-- Best practices and optimization tips
-- Advanced usage patterns
-
-### Architecture Documentation (`docs/architecture/`)
-- System design and component overview
-- Data flow and processing pipelines
-- Performance characteristics and scaling
-- Security and compliance considerations
-
-### Contribution Guides (`docs/contributing/`)
-- Development environment setup
-- Code contribution guidelines
-- Testing and quality assurance
-- Release process and versioning
-
-## ⚠️ Important Notes
-
-- **Pre-Beta Status**: All documentation is under active development
-- **Content Incomplete**: Materials being actively created and updated
-- **Structure Evolving**: Organization may change based on user feedback
-- **Multilingual Support**: Planning for internationalization
-
-## 🤝 Community Involvement
-
-We welcome contributions to improve documentation quality and coverage. Please:
-
-1. Review the contribution guidelines
-2. Coordinate with maintainers before major changes
-3. Follow educational documentation standards
-4. Ensure accuracy and clarity in technical content
-
----
-
-*"Making quantum-classical simulation accessible through comprehensive documentation"*
-
-**Next steps**: Implementation of core API documentation and user guides.
+Documentation contributions are welcome! Please follow the established patterns and maintain the educational tone throughout all documents.

@@ -1,83 +1,44 @@
-# AI/ML Components - Under Active Development
+# AI
 
-## 🧠 Overview
+## Overview
 
-This directory contains all artificial intelligence and machine learning components for the Quantum Forge platform.
+This directory contains AI-related components and integrations for the Quantum Forge platform, including machine learning models, AI-assisted code generation, and intelligent automation tools.
 
-**Status: Under Active Development** - This is a pre-beta development area. Features and APIs are subject to change.
+**⚠️ NOTE: This directory and all its contents are currently under active development. AI components and integrations are subject to change.**
 
-## 📁 Directory Structure
+## Structure
 
-```bash
+```
 ai/
-├── data/          # Training data, datasets, and data preprocessing
-├── models/         # ML models, neural networks, and AI architectures
-├── train/          # Training pipelines and experiment tracking
-└── inference/     # Model deployment, inference APIs, and serving
+├── models/              # Machine learning models
+├── assistants/         # AI assistant integrations
+├── automation/        # Intelligent automation tools
+├── generation/       # AI-assisted code generation
+└── analysis/        # Data analysis and insights
 ```
 
-## 🎯 Purpose
+## Development Status
 
-The AI/ML components enhance the hybrid quantum-classical simulation platform by:
+- **Machine Learning Models**: Under active development
+- **AI Assistants**: Under active development
+- **Automation Tools**: Under active development
+- **Code Generation**: Under active development
+- **Data Analysis**: Under active development
 
-- **Parameter Optimization**: AI-assisted optimization of simulation parameters
-- **Predictive Modeling**: Machine learning models for property prediction
-- **Accelerated Discovery**: AI-driven hypothesis generation and experimental design
-- **Automated Analysis**: Intelligent interpretation of simulation results
+## Key Components
 
-## 🚧 Current Development Status
+- **Quantum Simulation Assistant**: AI-powered guidance for quantum simulations
+- **Code Generation Engine**: Automated code creation and refactoring
+- **Parameter Optimization**: ML-based parameter tuning
+- **Result Analysis**: Automated insights from simulation data
 
-This directory is actively being developed as part of the Quantum Forge 2.0 refactoring effort. Current focus areas:
+## Technology Stack
 
-- Integration with quantum-classical simulation workflows
-- Development of physics-informed neural networks
-- Implementation of active learning strategies
-- Creation of AI-enhanced visualization tools
+- **Machine Learning**: PyTorch, Scikit-learn
+- **Natural Language Processing**: Transformers, LangChain
+- **Code Analysis**: AST parsing, static analysis
+- **Model Deployment**: ONNX, TensorFlow Serving
 
-## 📚 Key Components (Planned)
+## Contributing
 
-### Data Management (`ai/data/`)
-- Dataset curation and management
-- Feature engineering pipelines
-- Data augmentation and synthetic data generation
-- Quality control and validation frameworks
-
-### Model Development (`ai/models/`)
-- Physics-informed neural networks (PINNs)
-- Graph neural networks for molecular systems
-- Quantum machine learning algorithms
-- Transfer learning frameworks
-
-### Training Infrastructure (`ai/train/`)
-- Distributed training pipelines
-- Hyperparameter optimization
-- Experiment tracking and reproducibility
-- Model versioning and checkpointing
-
-### Inference Services (`ai/inference/`)
-- Model serving and API endpoints
-- Real-time prediction capabilities
-- Batch processing workflows
-- Performance monitoring and A/B testing
-
-## ⚠️ Important Notes
-
-- **Pre-Beta Status**: All components are under active development
-- **APIs Unstable**: Interfaces may change without notice
-- **Documentation Incomplete**: Educational materials being actively created
-- **Dependencies Evolving**: Package requirements subject to change
-
-## 🤝 Contribution Guidelines
-
-We welcome contributions from the scientific computing and AI communities. Please:
-
-1. Review the main project contribution guidelines
-2. Coordinate with maintainers before major changes
-3. Follow educational documentation standards
-4. Ensure compatibility with hybrid simulation workflows
-
----
-
-*"Advancing scientific discovery through AI-enhanced quantum-classical simulation"*
-
-**Next steps**: Implementation of core AI components and integration with backend simulation services.
+AI contributions should focus on enhancing the platform's intelligent capabilities while maintaining educational value and scientific accuracy.

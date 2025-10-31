@@ -1,3 +1,4 @@
+#  (does not work currently)
 # Roo proxy and key rotation
 
 This repository contains a small local proxy that you can run to avoid hitting provider rate limits directly from the Roo extension or other tools. The proxy rotates API keys when it detects rate limits or provider errors.

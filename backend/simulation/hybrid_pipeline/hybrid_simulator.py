@@ -36,11 +36,9 @@ from typing import Tuple, List, Optional
 import sys
 import os
 
-# Add parent directory to path to import modules
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from classical_sim.classical_simulator import ClassicalSimulator
-from quantum_kernel.quantum_solver import QuantumSolver
+# Import modules from the backend package
+from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
+from backend.simulation.quantum_kernel.quantum_solver import QuantumSolver
 
 class HybridSimulator:
     """

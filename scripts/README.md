@@ -1,99 +1,40 @@
-# Development Scripts - Under Active Development
+# Scripts
 
-## 🛠️ Overview
+## Overview
 
-This directory contains development, build, and maintenance scripts for the Quantum Forge platform.
+This directory contains development, deployment, and maintenance scripts for the Quantum Forge platform.
 
-**Status: Under Active Development** - This is a pre-beta development area. Scripts and tools are subject to change.
+**⚠️ NOTE: This directory and all its contents are currently under active development. Scripts and tools are subject to change.**
 
-## 📁 Directory Structure
+## Structure
 
-```bash
+```
 scripts/
-├── build/         # Build and compilation scripts
-├── test/          # Testing and validation scripts
-├── deploy/        # Deployment automation scripts
-├── dev/           # Development environment setup
-├── maintenance/  # System maintenance and cleanup
-├── migration/     # Data and schema migration tools
-└── README.md     # This file
+├── development/         # Development environment setup
+├── deployment/        # Deployment and CI/CD scripts
+├── maintenance/       # Maintenance and cleanup tools
+├── testing/          # Test automation scripts
+└── utilities/       # General utility scripts
 ```
 
-## 🎯 Purpose
+## Development Status
 
-The development scripts provide automation and tooling for:
+- **Development Scripts**: Under active development
+- **Deployment Scripts**: Under active development
+- **Maintenance Tools**: Under active development
+- **Testing Scripts**: Under active development
+- **Utility Scripts**: Under active development
 
-- **Build Automation**: Compilation and packaging of components
-- **Testing**: Automated testing and validation workflows
-- **Deployment**: Release and deployment automation
-- **Development**: Environment setup and developer tooling
-- **Maintenance**: System cleanup and optimization tasks
+## Key Scripts
 
-## 🚧 Current Development Status
+- **merge_and_cleanup.py**: Safe merge helper for integrating external codebases
+- **generate_file_summaries.ps1**: File summary generation for documentation
+- **diagnose_cline_context.ps1**: Context diagnosis for AI assistants
 
-This directory is actively being developed as part of the Quantum Forge 2.0 refactoring effort. Current focus areas:
+## Usage Guidelines
 
-- Implementation of cross-platform build scripts
-- Development of comprehensive testing frameworks
-- Creation of deployment automation tools
-- Integration with CI/CD pipelines
+All scripts should be run from the project root directory unless otherwise specified. Scripts are designed to be idempotent where possible and provide clear error messages.
 
-## 📚 Key Components (Planned)
+## Contributing
 
-### Build Scripts (`scripts/build/`)
-- Source code compilation and optimization
-- Package bundling and distribution
-- Asset optimization and compression
-- Version tagging and release preparation
-
-### Test Automation (`scripts/test/`)
-- Unit test execution and reporting
-- Integration test orchestration
-- Performance benchmarking
-- Code quality and linting checks
-
-### Deployment Tools (`scripts/deploy/`)
-- Environment provisioning
-- Service deployment and configuration
-- Rollback and recovery procedures
-- Health checks and monitoring
-
-### Development Setup (`scripts/dev/`)
-- Environment initialization
-- Dependency installation
-- IDE configuration
-- Sample data generation
-
-### Maintenance Utilities (`scripts/maintenance/`)
-- Log cleanup and rotation
-- Cache invalidation
-- Database optimization
-- Resource monitoring
-
-### Migration Tools (`scripts/migration/`)
-- Data format conversions
-- Schema updates and versioning
-- Backward compatibility tools
-- Import/export utilities
-
-## ⚠️ Important Notes
-
-- **Pre-Beta Status**: All scripts are under active development
-- **APIs Unstable**: Command-line interfaces may change
-- **Documentation Incomplete**: Usage guides being actively created
-- **Dependencies Evolving**: Tool requirements subject to change
-
-## 🤝 Contribution Guidelines
-
-We welcome contributions to improve development tooling and automation. Please:
-
-1. Review the main project contribution guidelines
-2. Coordinate with maintainers before major changes
-3. Follow cross-platform compatibility standards
-4. Ensure proper error handling and logging
-
----
-
-*"Automating development workflows for efficient quantum-classical simulation development"*
-
-**Next steps**: Implementation of core build and test automation scripts.
+Script contributions should follow established patterns and include proper error handling and documentation.

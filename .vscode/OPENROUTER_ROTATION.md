@@ -1,3 +1,4 @@
+#  (does not work currently)
 # OpenRouter API key rotation
 
 This workspace is configured to let the Continue extension use OpenRouter (Qwen 3 Coder free mode). The signing key is read from the environment variable `OPENROUTER_API_KEY`.

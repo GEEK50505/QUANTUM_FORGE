@@ -40,13 +40,13 @@ import sys
 import os
 import numpy as np
 
-# Add src to path to import our modules
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+# Add backend to path to import our modules
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
-from classical_sim.classical_simulator import ClassicalSimulator
-from quantum_kernel.quantum_solver import QuantumSolver
-from hybrid_pipeline.hybrid_simulator import HybridSimulator
-from utils.visualization import SimulationVisualizer
+from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
+from backend.simulation.quantum_kernel.quantum_solver import QuantumSolver
+from backend.simulation.hybrid_pipeline.hybrid_simulator import HybridSimulator
+from backend.simulation.utils.visualization import SimulationVisualizer
 
 def run_h2_classical_simulation():
     """

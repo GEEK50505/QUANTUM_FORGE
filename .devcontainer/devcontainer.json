@@ -1,21 +1,40 @@
 {
-  "name": "Quantum Forge Devcontainer (pre-beta)",
-  "image": "mcr.microsoft.com/vscode/devcontainers/python:3.10",
-  "features": {
-    "ghcr.io/devcontainers/features/node:1": {
-      "version": "18"
+  "name": "Quantum Forge Devcontainer",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "VARIANT": "3.10",
+      "NODE_VERSION": "18"
     }
   },
   "customizations": {
     "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.linting.enabled": true,
+        "python.linting.pylintEnabled": true,
+        "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
+        "python.formatting.blackPath": "/usr/local/py-utils/bin/black",
+        "python.formatting.yapfPath": "/usr/local/py-utils/bin/yapf",
+        "typescript.preferences.includePackageJsonAutoImports": "on",
+        "npm.autoDetect": "on"
+      },
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance",
+        "ms-vscode.vscode-typescript-next",
         "esbenp.prettier-vscode",
-        "dbaeumer.vscode-eslint"
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss"
       ]
     }
   },
-  "postCreateCommand": "pip install -r requirements.txt || true; cd frontend && npm install || true",
-  "remoteUser": "vscode"
+  "forwardPorts": [3000, 5173],
+  "postCreateCommand": "pip install -r requirements.txt && cd frontend && npm install",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    }
+  }
 }

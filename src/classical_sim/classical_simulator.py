@@ -1,18 +1,22 @@
-"""Stub: duplicate module moved to `backend.simulation`.
+"""
+Classical Simulator Module for Quantum Forge
 
-This file is a placeholder kept to preserve git history at the old path.
-Canonical implementation is under `backend/simulation/classical_sim`.
+This module provides access to the classical molecular dynamics simulator
+implemented in the backend package.
 
-Import from the canonical package instead, e.g.:
+The actual implementation is located in:
+    backend.simulation.classical_sim.classical_simulator
 
-    from classical_sim.classical_simulator import ClassicalSimulator
-
-Or use the backend path directly:
-
+Import from the backend package instead:
     from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
 
-This file intentionally contains no implementation.
+This file is maintained for backward compatibility and to preserve git history.
 """
 
-__all__ = []
-
+# Import the actual implementation from backend
+try:
+    from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
+    __all__ = ['ClassicalSimulator']
+except ImportError:
+    # Fallback for development environments
+    __all__ = []
