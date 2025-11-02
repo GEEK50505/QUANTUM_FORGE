@@ -1,0 +1,101 @@
+{
+  "job_id": "benzene_001",
+  "atoms": [
+    {
+      "id": 1,
+      "element": "C",
+      "covalent_coordination": 0.146,
+      "mulliken_charge": -0.209,
+      "c6_aa": 58.379,
+      "polarizability": 13.410
+    },
+    {
+      "id": 2,
+      "element": "C",
+      "covalent_coordination": 0.277,
+      "mulliken_charge": -0.180,
+      "c6_aa": 54.233,
+      "polarizability": 12.834
+    },
+    {
+      "id": 3,
+      "element": "C",
+      "covalent_coordination": 0.179,
+      "mulliken_charge": -0.194,
+      "c6_aa": 57.250,
+      "polarizability": 13.268
+    },
+    {
+      "id": 4,
+      "element": "C",
+      "covalent_coordination": 0.204,
+      "mulliken_charge": -0.193,
+      "c6_aa": 56.863,
+      "polarizability": 13.210
+    },
+    {
+      "id": 5,
+      "element": "C",
+      "covalent_coordination": 0.320,
+      "mulliken_charge": -0.186,
+      "c6_aa": 52.553,
+      "polarizability": 12.562
+    },
+    {
+      "id": 6,
+      "element": "C",
+      "covalent_coordination": 0.243,
+      "mulliken_charge": -0.177,
+      "c6_aa": 55.182,
+      "polarizability": 12.984
+    },
+    {
+      "id": 7,
+      "element": "H",
+      "covalent_coordination": 0.082,
+      "mulliken_charge": 0.235,
+      "c6_aa": 2.328,
+      "polarizability": 2.789
+    },
+    {
+      "id": 8,
+      "element": "H",
+      "covalent_coordination": 0.080,
+      "mulliken_charge": 0.236,
+      "c6_aa": 2.321,
+      "polarizability": 2.785
+    },
+    {
+      "id": 9,
+      "element": "H",
+      "covalent_coordination": 0.038,
+      "mulliken_charge": 0.216,
+      "c6_aa": 2.542,
+      "polarizability": 2.915
+    },
+    {
+      "id": 10,
+      "element": "H",
+      "covalent_coordination": 0.000,
+      "mulliken_charge": -0.074,
+      "c6_aa": 11.794,
+      "polarizability": 6.280
+    },
+    {
+      "id": 11,
+      "element": "H",
+      "covalent_coordination": 0.109,
+      "mulliken_charge": 0.248,
+      "c6_aa": 2.196,
+      "polarizability": 2.708
+    },
+    {
+      "id": 12,
+      "element": "H",
+      "covalent_coordination": 0.169,
+      "mulliken_charge": 0.278,
+      "c6_aa": 1.914,
+      "polarizability": 2.526
+    }
+  ]
+}

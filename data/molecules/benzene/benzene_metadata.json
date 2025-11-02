@@ -1,0 +1,18 @@
+{
+  "job_id": "benzene_001",
+  "timestamp": "2025-11-02T10:38:52",
+  "input_file": "benzene.xyz",
+  "method": {
+    "engine": "xTB",
+    "version": "6.7.1",
+    "hamiltonian": "GFN2-xTB",
+    "optimization_level": "tight"
+  },
+  "molecule": {
+    "name": "Benzene",
+    "formula": "C6H6",
+    "num_atoms": 12,
+    "molecular_mass_u": 78.1120599,
+    "charge": 0
+  }
+}

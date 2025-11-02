@@ -1,0 +1,22 @@
+{
+  "job_id": "benzene_001",
+  "bond_orders": [
+    {"atom1": 1, "atom2": 6, "wbo": 0.566, "type": "C-C"},
+    {"atom1": 1, "atom2": 5, "wbo": 0.407, "type": "C-C"},
+    {"atom1": 1, "atom2": 2, "wbo": 0.406, "type": "C-C"},
+    {"atom1": 1, "atom2": 7, "wbo": 0.376, "type": "C-H"},
+    {"atom1": 2, "atom2": 6, "wbo": 0.587, "type": "C-C"},
+    {"atom1": 2, "atom2": 3, "wbo": 0.402, "type": "C-C"},
+    {"atom1": 2, "atom2": 4, "wbo": 0.383, "type": "C-C"},
+    {"atom1": 2, "atom2": 8, "wbo": 0.225, "type": "C-H"},
+    {"atom1": 3, "atom2": 5, "wbo": 0.490, "type": "C-C"},
+    {"atom1": 3, "atom2": 4, "wbo": 0.471, "type": "C-C"},
+    {"atom1": 3, "atom2": 8, "wbo": 0.347, "type": "C-H"},
+    {"atom1": 3, "atom2": 11, "wbo": 0.274, "type": "C-H"},
+    {"atom1": 4, "atom2": 5, "wbo": 0.487, "type": "C-C"},
+    {"atom1": 4, "atom2": 9, "wbo": 0.368, "type": "C-H"},
+    {"atom1": 5, "atom2": 6, "wbo": 0.446, "type": "C-C"},
+    {"atom1": 5, "atom2": 11, "wbo": 0.217, "type": "C-H"},
+    {"atom1": 6, "atom2": 11, "wbo": 0.370, "type": "C-H"}
+  ]
+}

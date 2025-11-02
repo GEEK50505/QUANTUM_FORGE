@@ -1,0 +1,11 @@
+{
+  "job_id": "benzene_001",
+  "energetics": {
+    "total_energy_hartree": -14.419872547260,
+    "homo_lumo_gap_ev": 0.116732665694
+  },
+  "convergence": {
+    "converged": true,
+    "gradient_norm_eh_a0": 0.002717087549
+  }
+}

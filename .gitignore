@@ -22,3 +22,25 @@ openrouter_keys_history.json
 /frontend/template_sources/
 /frontend/templates/
 /react-tailwind-frontend-main-template-files/
+
+# xTB temporary files
+*.xtbtop
+*.xtbopt
+*.xtbrestart
+.xtb/
+
+# Test runs
+test_runs/
+runs/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
