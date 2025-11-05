@@ -4,8 +4,13 @@ Standalone script to run a single xTB job with full logging.
 """
 import argparse
 import sys
+import os
 import traceback
 from pathlib import Path
+
+# Add the parent directory to the path to import backend modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from backend.core.logger import setup_logger
 from backend.simulation.classical_sim.xtb_runner import XTBRunner
 from backend.simulation.classical_sim.xtb_parser import XTBLogParser

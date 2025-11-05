@@ -1,0 +1,98 @@
+import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import { JobSubmitRequest, JobResponse, ResultsResponse } from '../types'
+
+// Create axios instance with baseURL
+const apiClient = axios.create({
+  baseURL: 'http://localhost:8000/api/v1',
+  timeout: 30000, // 30 seconds timeout
+})
+
+// Add request interceptor for logging
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    console.debug('API Request:', config.method?.toUpperCase(), config.url)
+    return config
+  },
+  (error: any) => {
+    console.error('API Request Error:', error)
+    return Promise.reject(error)
+  }
+)
+
+// Add response interceptor for error handling
+apiClient.interceptors.response.use(
+  (response: AxiosResponse) => {
+    console.debug('API Response:', response.status, response.config.url)
+    return response
+  },
+  (error: any) => {
+    console.error('API Response Error:', error.response?.status, error.response?.data)
+    return Promise.reject(error)
+  }
+)
+
+// Helper function to handle API errors
+const handleApiError = (error: any): string => {
+  if (axios.isAxiosError(error)) {
+    if (error.response) {
+      // Server responded with error status
+      return error.response.data?.error_message || error.response.data?.detail || `Error ${error.response.status}: ${error.response.statusText}`
+    } else if (error.request) {
+      // Network error
+      return 'Network error: Please check your connection'
+    } else {
+      // Other error
+      return error.message || 'An unknown error occurred'
+    }
+  } else {
+    // Non-Axios error
+    return 'An unexpected error occurred'
+  }
+}
+
+// API Functions
+
+export const submitJob = async (request: JobSubmitRequest): Promise<JobResponse> => {
+  try {
+    const response = await apiClient.post<JobResponse>('/jobs', request)
+    return response.data
+  } catch (error: any) {
+    throw new Error(handleApiError(error))
+  }
+}
+
+export const getJobStatus = async (jobId: string): Promise<JobResponse> => {
+  try {
+    const response = await apiClient.get<JobResponse>(`/jobs/${jobId}`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(handleApiError(error))
+  }
+}
+
+export const getJobResults = async (jobId: string): Promise<ResultsResponse> => {
+  try {
+    const response = await apiClient.get<ResultsResponse>(`/jobs/${jobId}/results`)
+    return response.data
+  } catch (error: any) {
+    throw new Error(handleApiError(error))
+  }
+}
+
+export const listJobs = async (status?: string): Promise<JobResponse[]> => {
+  try {
+    const params = status ? { status } : {}
+    const response = await apiClient.get<JobResponse[]>('/jobs', { params })
+    return response.data
+  } catch (error: any) {
+    throw new Error(handleApiError(error))
+  }
+}
+
+export const deleteJob = async (jobId: string): Promise<void> => {
+  try {
+    await apiClient.delete(`/jobs/${jobId}`)
+  } catch (error: any) {
+    throw new Error(handleApiError(error))
+  }
+}
