@@ -54,7 +54,7 @@ const handleApiError = (error: any): string => {
 
 export const submitJob = async (request: JobSubmitRequest): Promise<JobResponse> => {
   try {
-    const response = await apiClient.post<JobResponse>('/jobs', request)
+    const response = await apiClient.post<JobResponse>('/jobs/submit', request)
     return response.data
   } catch (error: any) {
     throw new Error(handleApiError(error))
@@ -82,7 +82,7 @@ export const getJobResults = async (jobId: string): Promise<ResultsResponse> => 
 export const listJobs = async (status?: string): Promise<JobResponse[]> => {
   try {
     const params = status ? { status } : {}
-    const response = await apiClient.get<JobResponse[]>('/jobs', { params })
+    const response = await apiClient.get<JobResponse[]>('/jobs/list', { params })
     return response.data
   } catch (error: any) {
     throw new Error(handleApiError(error))
