@@ -1,59 +1,100 @@
-#  (does not work currently)
-# Roo proxy and key rotation
+# Roo Code Automatic Key Testing & Proxy Setup
 
-This repository contains a small local proxy that you can run to avoid hitting provider rate limits directly from the Roo extension or other tools. The proxy rotates API keys when it detects rate limits or provider errors.
+This repository includes automated key testing and proxy configuration that starts when you open VS Code. The system will:
 
-Files of interest
+1. Test all your OpenRouter API keys in parallel to find the fastest working one
+2. Configure Roo Code to use the best key automatically
+3. Start a local proxy that handles key rotation if you hit rate limits
 
-- `scripts/roo_proxy/proxy.js` — Node/Express proxy that forwards requests to OpenRouter (`https://api.openrouter.ai`) and rotates keys from `keys.json` when 429 responses or errors occur.
-- `scripts/roo_proxy/keys.json` — pool of API keys (managed by the helper scripts).
-- `scripts/add_roo_key.ps1` — add a new key to the pool (masking output).
-- `scripts/remove_roo_key.ps1` — remove keys by prefix.
+## Files & Components
 
-Quick start
+- `scripts/roo_proxy/key_tester.py` — Fast parallel key tester (tests all keys simultaneously)
+- `scripts/roo_proxy/keys.json` — Your pool of API keys (copy from keys.json.sample)
+- `scripts/roo_proxy/start_proxy.sh` — Automatic startup script
+- `.vscode/tasks.json` — VS Code task that runs on workspace open
+- `.vscode/settings.json` — Roo Code & proxy configuration
 
-1. Install dependencies for the proxy (requires Node.js installed):
+## Quick Start
 
-```powershell
-cd .\scripts\roo_proxy
-npm install
+1. Copy the sample keys file and add your keys:
+
+```bash
+# Copy the sample
+cp scripts/roo_proxy/keys.json.sample scripts/roo_proxy/keys.json
+
+# Edit keys.json and add your OpenRouter API keys
+code scripts/roo_proxy/keys.json
 ```
 
-2. Add your keys (repeat for each key you rotate into):
+2. Install Python packages (one-time setup):
 
-```powershell
-. .\..\add_roo_key.ps1 -Key "sk-or-<your-key-here>"
+```bash
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install aiohttp for fast parallel testing
+pip install aiohttp
 ```
 
-3. Start the proxy (runs on port 3002 by default):
+3. That's it! Now when you open VS Code:
+- The workspace task will run automatically
+- It tests all your keys in parallel to find the fastest one
+- Roo Code is pre-configured to use the best key
+- The proxy handles auto-rotation if you hit rate limits
 
-```powershell
-cd .\scripts\roo_proxy
-npm start
-# or
-node proxy.js
+Manual Testing (optional):
+```bash
+# Test your keys manually and see diagnostics
+python3 scripts/roo_proxy/key_tester.py --keys-file scripts/roo_proxy/keys.json
+
+# Or just get the best key
+python3 scripts/roo_proxy/key_tester.py --keys-file scripts/roo_proxy/keys.json --best-only
 ```
 
-4. Configure the Roo extension (or other extension) to use the proxy as the API base URL.
+## How It Works
 
-   - If the extension lets you change the provider base URL, set it to:
+The automated system has three parts:
 
-     `http://localhost:3002`
+1. **Fast Key Testing**:
+   - Uses asyncio + aiohttp to test all keys simultaneously
+   - Probes OpenRouter's lightweight /models endpoint
+   - Measures response times to find the fastest working key
+   - Results cached in `.vscode/current_key.txt`
 
-   - If the extension requires an API key, leave it blank (the proxy manages keys). If the extension insists on a key, use a placeholder; real keys are supplied by the proxy.
+2. **VS Code Integration**:
+   - Task in `tasks.json` runs on workspace open
+   - Updates Roo Code settings automatically
+   - Proxy starts in background if needed
 
-How rotation works
+3. **Key Rotation**:
+   - Proxy watches for rate limits (429 responses)
+   - Auto-switches to next best key when needed
+   - Keys disabled temporarily after rate limits
+   - Re-tests keys periodically to find fastest
 
-- The proxy picks the next available key in round-robin fashion.
-- When it receives a 429 from OpenRouter, it marks the key as disabled for a short backoff (default 60s) and retries with the next available key.
-- If all keys are exhausted, the proxy returns a 502/429 to the client.
+## Security Notes
 
-Security notes
+- `keys.json` stores keys locally in plaintext
+- Keep it out of version control (in .gitignore)
+- Consider file permissions to protect keys
+- Proxy is for local dev only - do not expose publicly
 
-- `keys.json` stores keys in plaintext locally. Keep it out of version control (it is not added to the repo by default); you may want to protect it using filesystem permissions.
-- This proxy is for local development only. Do not expose it publicly.
+## Advanced Usage
 
-Advanced
+- Edit `key_tester.py` options:
+  ```bash
+  # Change concurrency (default 20):
+  python3 key_tester.py --concurrency 10
 
-- You can edit `proxy.js` to change backoff timings or persist disabledUntil timestamps differently.
-- Consider replacing the simple JSON store with an encrypted store or a small Redis instance if you need multi-user rotation.
+  # Adjust timeout (default 5s):
+  python3 key_tester.py --timeout 3.0
+  
+  # Use different test endpoint:
+  python3 key_tester.py --test-url "https://..."
+  ```
+
+- VS Code settings in `.vscode/settings.json` configure:
+  - Proxy URL and auto-start
+  - Key rotation behavior
+  - Python environment paths

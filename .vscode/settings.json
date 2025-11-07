@@ -3,5 +3,15 @@
   // The extension should read the API key from the OPENROUTER_API_KEY environment variable.
   "continue.provider": "openrouter",
   "continue.openrouter.model": "qwen-3-coder-free",
-  "continue.openrouter.apiKeyEnv": "OPENROUTER_API_KEY"
+  "continue.openrouter.apiKeyEnv": "OPENROUTER_API_KEY",
+
+  // Roo Code extension configuration
+  "rooCode.apiBaseUrl": "http://localhost:3002",
+  "rooCode.autoStart": true,
+  "rooCode.enableAutoKeyRotation": true,
+
+  // Python path for scripts
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}"
+  ]
 }

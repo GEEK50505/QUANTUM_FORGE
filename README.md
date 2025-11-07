@@ -32,22 +32,11 @@ This approach gets the best of both worlds:
 ```
 QUANTUM_FORGE/
 ├── backend/                  # Core simulation backend (under active development)
-│   ├── simulation/          # Main simulation modules
-│   │   ├── classical_sim/    # Classical molecular dynamics simulator
-│   │   ├── quantum_kernel/    # Quantum mechanical solver
-│   │   ├── hybrid_pipeline/ # Hybrid simulation orchestrator
-│   │   └── utils/           # Visualization and analysis tools
-│   └── db/                   # Database and persistence layer
 ├── frontend/                 # React-based web interface (under active development)
 ├── notebooks/                # Jupyter notebooks for interactive exploration
 ├── docs/                     # Documentation and tutorials
 ├── scripts/                  # Development and deployment scripts
-├── ai/                       # AI/ML components (planned)
-|   ├── models/              # Machine learning models
-|   ├── assistants/         # AI assistant integrations
-|   ├── automation/        # Intelligent automation tools
-|   ├── generation/       # AI-assisted code generation
-|   └── analysis/        # Data analysis and insights                   
+├── ai/                       # AI/ML components (planned)                 
 ├── deploy/                   # Deployment configurations (planned)
 ├── data/                     # Simulation data and results (planned)
 ├── tests/                    # Test suite
