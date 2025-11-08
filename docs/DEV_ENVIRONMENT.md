@@ -73,6 +73,23 @@ python3 scripts/add_frontend_headers.py --root frontend/src --extensions .ts .ts
 python3 scripts/add_frontend_headers.py --root frontend/src --extensions .ts .tsx
 ```
 
+Dev Container (optional)
+------------------------
+We provide a VS Code Dev Container configuration for an easy reproducible developer environment. The devcontainer will provision Python 3.12 and Node 18, create a `.venv`, install Python requirements, and run `npm ci` in the `frontend` folder.
+
+To use it:
+
+```bash
+# In VS Code: Command Palette -> Remote-Containers: Open Folder in Container...
+# or use the Reopen in Container command when prompted.
+```
+
+The `postCreateCommand` will run automatically and set up:
+- `.venv` virtual environment with `requirements.txt` installed
+- frontend dependencies installed via `npm ci`
+
+If you prefer a manual flow instead of using the devcontainer, follow the Python and Frontend sections above.
+
 Notes & safety
 - The repo uses a non-destructive Phase 2 refactor pattern: original files moved to `backend/legacy/` and small shims are left behind to preserve import paths.
 - Always run the test suite after making backend changes.
