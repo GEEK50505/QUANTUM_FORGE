@@ -43,7 +43,7 @@ import numpy as np
 # Add backend to path to import our modules
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
-from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
+from backend.app.simulation import ClassicalSimulator
 from backend.simulation.quantum_kernel.quantum_solver import QuantumSolver
 from backend.simulation.hybrid_pipeline.hybrid_simulator import HybridSimulator
 from backend.simulation.utils.visualization import SimulationVisualizer

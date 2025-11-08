@@ -26,8 +26,9 @@ import { SIMULATION_STATUS, SIMULATION_BACKENDS } from '../utils/constants';
 export interface Simulation {
   id: string;
   name: string;
-  type: keyof typeof SIMULATION_BACKENDS;
-  status: keyof typeof SIMULATION_STATUS;
+  // Use the runtime values (the constant values are lowercase strings)
+  type: typeof SIMULATION_BACKENDS[keyof typeof SIMULATION_BACKENDS];
+  status: typeof SIMULATION_STATUS[keyof typeof SIMULATION_STATUS];
   createdAt: string;
   startedAt?: string;
   completedAt?: string;
@@ -62,8 +63,8 @@ const mockSimulations: Simulation[] = [
   {
     id: 'sim-001',
     name: 'H2 Ground State Calculation',
-    type: 'QUANTUM',
-    status: 'COMPLETED',
+    type: SIMULATION_BACKENDS.QUANTUM,
+    status: SIMULATION_STATUS.COMPLETED,
     createdAt: '2025-10-25T10:30:00Z',
     startedAt: '2025-10-25T10:31:00Z',
     completedAt: '2025-10-25T10:35:00Z',
@@ -76,8 +77,8 @@ const mockSimulations: Simulation[] = [
   {
     id: 'sim-002',
     name: 'LiH Dissociation Curve',
-    type: 'HYBRID',
-    status: 'RUNNING',
+    type: SIMULATION_BACKENDS.HYBRID,
+    status: SIMULATION_STATUS.RUNNING,
     createdAt: '2025-10-26T14:15:00Z',
     startedAt: '2025-10-26T14:16:00Z',
     duration: 180,
@@ -89,8 +90,8 @@ const mockSimulations: Simulation[] = [
   {
     id: 'sim-003',
     name: 'Water Cluster Optimization',
-    type: 'CLASSICAL',
-    status: 'QUEUED',
+    type: SIMULATION_BACKENDS.CLASSICAL,
+    status: SIMULATION_STATUS.QUEUED,
     createdAt: '2025-10-26T16:45:00Z',
     qubits: 0,
     shots: 0,
@@ -99,8 +100,8 @@ const mockSimulations: Simulation[] = [
   {
     id: 'sim-004',
     name: 'FeMoco Active Site',
-    type: 'QUANTUM',
-    status: 'FAILED',
+    type: SIMULATION_BACKENDS.QUANTUM,
+    status: SIMULATION_STATUS.FAILED,
     createdAt: '2025-10-27T08:20:00Z',
     startedAt: '2025-10-27T08:21:00Z',
     completedAt: '2025-10-27T08:25:00Z',
@@ -178,8 +179,8 @@ export async function useMockApi<T>(
       const newSimulation: Simulation = {
         id: `sim-${String(mockSimulations.length + 1).padStart(3, '0')}`,
         name: config.body?.name || 'New Simulation',
-  type: config.body?.type || 'CLASSICAL',
-  status: 'QUEUED',
+        type: config.body?.type || SIMULATION_BACKENDS.CLASSICAL,
+        status: SIMULATION_STATUS.QUEUED,
         createdAt: new Date().toISOString(),
         qubits: config.body?.qubits || 0,
         shots: config.body?.shots || 0,

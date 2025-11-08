@@ -42,7 +42,7 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
       
       // Auto-refresh if job is still running
       const interval = setInterval(() => {
-        if (job?.status === 'RUNNING' || job?.status === 'QUEUED') {
+        if (job?.status === 'running' || job?.status === 'queued') {
           fetchJob()
         }
       }, 2000)
@@ -192,11 +192,11 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
             
             <div className="mt-4 sm:mt-0">
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                job.status === 'QUEUED' 
+                job.status === 'queued' 
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-                  : job.status === 'RUNNING'
+                  : job.status === 'running'
                   ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                  : job.status === 'COMPLETED'
+                  : job.status === 'completed'
                   ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
                   : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
               }`}>
@@ -247,14 +247,14 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
         )}
 
         {/* Results */}
-        {job.status === 'COMPLETED' && job.results && (
+        {job.status === 'completed' && job.results && (
           <div className="mb-8">
             <ResultsViewer jobId={job.job_id} />
           </div>
         )}
 
         {/* Error Message */}
-        {job.status === 'FAILED' && job.error_message && (
+        {job.status === 'failed' && job.error_message && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6 mb-8">
             <h3 className="text-lg font-medium text-red-800 dark:text-red-200 mb-2">
               Calculation Failed

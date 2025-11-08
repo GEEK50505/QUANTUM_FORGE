@@ -25,13 +25,13 @@ interface JobCardProps {
 const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
   const getStatusColor = () => {
     switch (job.status) {
-      case 'QUEUED':
+      case 'queued':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
-      case 'RUNNING':
+      case 'running':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-      case 'COMPLETED':
+      case 'completed':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-      case 'FAILED':
+      case 'failed':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
@@ -40,13 +40,13 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
 
   const getStatusIcon = () => {
     switch (job.status) {
-      case 'QUEUED':
+      case 'queued':
         return <FiClock className="w-4 h-4" />
-      case 'RUNNING':
+      case 'running':
         return <FiLoader className="w-4 h-4 animate-spin" />
-      case 'COMPLETED':
+      case 'completed':
         return <FiCheckCircle className="w-4 h-4" />
-      case 'FAILED':
+      case 'failed':
         return <FiXCircle className="w-4 h-4" />
       default:
         return <FiClock className="w-4 h-4" />
@@ -117,7 +117,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
           </span>
         </div>
 
-        {job.status === 'RUNNING' && (
+        {job.status === 'running' && (
           <div className="mt-4">
             <div className="flex items-center">
               <FiLoader className="animate-spin h-4 w-4 text-yellow-500 mr-2" />
@@ -134,7 +134,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
           </div>
         )}
 
-        {job.status === 'FAILED' && job.error_message && (
+        {job.status === 'failed' && job.error_message && (
           <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-300">
             <p className="font-medium">Error:</p>
             <p className="truncate">{job.error_message}</p>
@@ -147,7 +147,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
             className="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <FiEye className="w-4 h-4 mr-1" />
-            {job.status === 'COMPLETED' ? 'View Results' : 'Details'}
+            {job.status === 'completed' ? 'View Results' : 'Details'}
           </button>
           
           <button

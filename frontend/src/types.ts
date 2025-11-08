@@ -15,7 +15,8 @@ export interface JobSubmitRequest {
 
 export interface JobResponse {
   job_id: string
-  status: 'QUEUED' | 'RUNNING' | 'COMPLETED' | 'FAILED'
+  // Status uses runtime values that come from SIMULATION_STATUS (lowercase strings)
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
   created_at: string // ISO datetime
   updated_at: string
   molecule_name?: string
