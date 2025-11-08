@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { createContext, useContext, useState, useEffect } from "react";
 
 type SidebarContextType = {

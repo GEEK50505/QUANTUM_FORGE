@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 

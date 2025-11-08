@@ -1,3 +1,18 @@
+/**
+ * frontend/src/components/JobForm.tsx
+ *
+ * Purpose:
+ *  - Form component for submitting new xTB calculation jobs. Handles file
+ *    upload via `FileUpload`, collects metadata (molecule name, email, tags)
+ *    and posts a `JobSubmitRequest` to the backend API.
+ *
+ * Exports:
+ *  - default: JobForm component
+ *
+ * Usage:
+ *  <JobForm />
+ */
+
 import React, { useState } from 'react'
 import { FiSend, FiLoader } from 'react-icons/fi'
 import FileUpload from './FileUpload'

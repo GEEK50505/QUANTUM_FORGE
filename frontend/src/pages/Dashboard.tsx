@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import React, { useState } from 'react'
 import JobForm from '../components/JobForm'
 import JobList from '../components/JobList'

@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import React, { useState, useEffect } from 'react'
 import { FiArrowLeft, FiRefreshCw, FiTrash } from 'react-icons/fi'
 import MoleculeViewer from '../components/MoleculeViewer'

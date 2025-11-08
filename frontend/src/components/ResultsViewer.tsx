@@ -1,3 +1,18 @@
+/**
+ * frontend/src/components/ResultsViewer.tsx
+ *
+ * Purpose:
+ *  - Fetches and displays calculation results for a given job, including
+ *    energy, gap, gradient norm, convergence status, atomic charges and
+ *    molecular properties. Provides download helpers for JSON/XYZ/log.
+ *
+ * Exports:
+ *  - default: ResultsViewer component
+ *
+ * Usage:
+ *  <ResultsViewer jobId="sim-001" />
+ */
+
 import React, { useState, useEffect } from 'react'
 import { FiDownload, FiLoader } from 'react-icons/fi'
 import { ResultsResponse } from '../types'

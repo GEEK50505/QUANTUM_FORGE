@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 export default function TwentyOneIsToNine() {
   return (
     <div className="aspect-21/9 overflow-hidden rounded-lg">

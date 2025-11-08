@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";

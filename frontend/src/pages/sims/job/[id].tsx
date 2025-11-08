@@ -14,7 +14,7 @@ import { get } from '../../../services/api';
 import { Simulation } from '../../../hooks/useMockApi';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
-import Modal from '../../../components/ui/Modal';
+import { Modal } from '../../../components/ui/Modal';
 
 /**
  * Job Detail Page
@@ -167,10 +167,10 @@ const JobDetailPage: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
-                <p className="mt-1 text-sm font-medium capitalize" 
-                   style={{ color: job.status === 'completed' ? '#10B981' : 
-                            job.status === 'running' ? '#3B82F6' : 
-                            job.status === 'failed' ? '#EF4444' : '#F59E0B' }}>
+           <p className="mt-1 text-sm font-medium capitalize" 
+             style={{ color: job.status === 'COMPLETED' ? '#10B981' : 
+                   job.status === 'RUNNING' ? '#3B82F6' : 
+                   job.status === 'FAILED' ? '#EF4444' : '#F59E0B' }}>
                   {job.status}
                 </p>
               </div>

@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from backend.core.logger import setup_logger
-from backend.simulation.classical_sim.xtb_runner import XTBRunner
+from backend.core.compat import XTBRunner
 
 
 def main():

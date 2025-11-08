@@ -1,3 +1,28 @@
+/**
+ * frontend/src/api/client.ts
+ *
+ * Purpose:
+ *  - Typed axios-based API client used by frontend components to interact with
+ *    the backend REST API (job submission, status, results, listing, delete).
+ *
+ * Exports:
+ *  - submitJob(request: JobSubmitRequest): Promise<JobResponse>
+ *  - getJobStatus(jobId: string): Promise<JobResponse>
+ *  - getJobResults(jobId: string): Promise<ResultsResponse>
+ *  - listJobs(status?: string): Promise<JobResponse[]>
+ *  - deleteJob(jobId: string): Promise<void>
+ *
+ * Notes:
+ *  - Uses an axios instance with interceptors for lightweight logging and
+ *    centralized error handling. Error messages are normalized via
+ *    `handleApiError` to surface friendly messages to UI components.
+ *  - Base URL configured for local dev; adjust via environment variables in
+ *    CI/CD or production builds as needed.
+ *
+ * Example:
+ *  const job = await submitJob({ name: 'water', xyz: '...' })
+ */
+
 import axios, { AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import { JobSubmitRequest, JobResponse, ResultsResponse } from '../types'
 

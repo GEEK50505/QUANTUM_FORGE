@@ -1,25 +1,26 @@
-// NOTE (permanent): This file contains educational notes for non-coders.
-// Do not remove comments unless explicitly requested in a written instruction.
-// These notes explain purpose, props, and data contract shapes.
-//
-// Module Purpose: Central API client for Quantum Forge
-// What this file renders: N/A (service functions only)
-// How it fits into the Quantum Forge app: Provides a single point of contact
-// for all backend API calls, switching between real and mock implementations
-// Author: Qwen 3 Coder — Scaffold Stage
-
 /**
- * API Service
- * 
- * This module provides a centralized client for making API calls to the
- * Quantum Forge backend. It automatically switches between real API calls
- * and mock implementations based on the DEV_MODE setting.
- * 
- * For non-coders: This is the "messenger" that sends requests to the backend
- * server and brings back the responses. When in development mode (DEV_MODE=true),
- * it uses fake data so you can test the UI without needing a real server.
- * When you connect to a real backend, it will automatically switch to making
- * actual network requests.
+ * frontend/src/services/api.ts
+ *
+ * Purpose:
+ *  - Small wrapper around fetch-based HTTP calls used across the frontend.
+ *  - Provides `client`, `get`, `post`, `put`, `del` helpers and automatically
+ *    uses mock implementations when `DEV_MODE` is enabled.
+ *
+ * Exports:
+ *  - client<T>(endpoint: string, config?: HttpClientConfig): Promise<ApiResponse<T>>
+ *  - get<T>(endpoint: string): Promise<ApiResponse<T>>
+ *  - post<T>(endpoint: string, body: any): Promise<ApiResponse<T>>
+ *  - put<T>(endpoint: string, body: any): Promise<ApiResponse<T>>
+ *  - del<T>(endpoint: string): Promise<ApiResponse<T>>
+ *
+ * Behavior:
+ *  - In DEV_MODE the module delegates calls to the `useMockApi` helper so UI
+ *    developers can work offline without a running backend.
+ *  - In production it builds the full URL using `API_BASE_URL` and the native
+ *    fetch API. Responses are returned as `{ data, status, message? }`.
+ *
+ * Example usage:
+ *  const { data } = await post<JobResponse>('/jobs/submit', { name, xyz })
  */
 
 import { DEV_MODE, API_BASE_URL } from '../utils/constants';

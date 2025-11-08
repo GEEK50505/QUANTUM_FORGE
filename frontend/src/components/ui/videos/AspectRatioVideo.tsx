@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 type AspectRatioVideoProps = {
   videoUrl: string; // URL of the video
   aspectRatio?: string; // Aspect ratio in the format "width/height", default is "16/9"

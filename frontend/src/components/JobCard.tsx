@@ -1,3 +1,17 @@
+/**
+ * frontend/src/components/JobCard.tsx
+ *
+ * Purpose:
+ *  - Present a single job summary card with quick status, copy ID, view
+ *    details and delete actions.
+ *
+ * Exports:
+ *  - default: JobCard component
+ *
+ * Usage:
+ *  <JobCard job={job} onViewDetails={id => open(id)} onDelete={id => remove(id)} />
+ */
+
 import React from 'react'
 import { FiCopy, FiEye, FiTrash, FiLoader, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi'
 import { JobResponse } from '../types'

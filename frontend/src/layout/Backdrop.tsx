@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { useSidebar } from "../context/SidebarContext";
 
 const Backdrop: React.FC = () => {

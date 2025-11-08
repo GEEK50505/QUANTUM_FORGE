@@ -1,6 +1,31 @@
 """
-Execute xTB calculations with full error handling and logging.
+File: backend/core/xtb_runner.py
+
+PURPOSE:
+This module provides XTBRunner, a thin orchestration layer to execute the
+extended Tight Binding (xTB) quantum chemistry binary, capture output,
+parse JSON results and return a structured summary to the rest of the
+application.
+
+TECHNICAL TERMS:
+
+xTB: extended Tight Binding — a fast semi-empirical quantum chemistry method
+used for geometry optimization and electronic-structure estimations.
+
+HOMO/LUMO: Highest Occupied / Lowest Unoccupied Molecular Orbitals.
+Hartree: Atomic unit of energy (1 Hartree ≈ 27.2 eV).
+
+DEPENDENCIES:
+
+subprocess: run external xTB process
+json: parse JSON-encoded xTB output
+logging: instrument execution for observability
+pathlib: filesystem helpers
+
+AUTHOR: Quantum_Forge Team
+LAST MODIFIED: 2025-11-08
 """
+
 import subprocess
 import json
 import logging
@@ -11,15 +36,38 @@ from backend.config import XTBConfig, get_logger
 
 
 class XTBRunner:
-    """Execute xTB calculations with full error handling and logging."""
-    
+    """
+    Manages execution of xTB calculations and parsing results into a stable
+    dictionary returned to callers.
+
+    WHY THIS CLASS EXISTS:
+    - Centralizes the command invocation and error handling for xTB so the
+      rest of the system can request calculations without duplicating safety
+      checks (timeouts, validation, parsing errors).
+    - Provides clear success/failure contract used by job managers and APIs.
+
+    CONTRACT:
+    - Input: path to an XYZ file and a job identifier
+    - Output: dict { success: bool, energy: Optional[float], results: Optional[dict], error: Optional[str] }
+
+    ERROR MODES:
+    - Invalid input file -> success=False + explanatory message
+    - xTB process error / non-zero exit -> success=False + stderr
+    - JSON parse error -> success=False + parse error message
+    - Timeout -> success=False + 'Timeout'
+    """
+
     def __init__(self, config: XTBConfig, logger: Optional[logging.Logger] = None):
         """
-        Initialize the XTB runner.
-        
-        Args:
-            config: XTBConfig instance
-            logger: Optional logger instance
+        Initialize the runner.
+
+        PARAMETERS:
+        - config: XTBConfig with configuration values (paths, timeouts, workdir)
+        - logger: optional logging.Logger instance; if omitted a module logger is used
+
+        VALIDATION:
+        - The constructor logs its initialization but does not call the binary
+          at construction time to keep initialization side-effect free.
         """
         self.config = config
         self.logger = logger or get_logger(__name__)

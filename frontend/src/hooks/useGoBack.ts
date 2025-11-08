@@ -1,3 +1,17 @@
+/**
+ * frontend/src/hooks/useGoBack.ts
+ *
+ * Purpose:
+ *  - Simple hook to navigate back in history or fall back to the app root.
+ *
+ * Exports:
+ *  - default export: useGoBack(): () => void
+ *
+ * Usage:
+ *  const goBack = useGoBack();
+ *  goBack();
+ */
+
 import { useNavigate } from "react-router-dom";
 
 const useGoBack = () => {

@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import React from "react";
 import GridShape from "../../components/common/GridShape";
 import { Link } from "react-router-dom";

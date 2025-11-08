@@ -1,3 +1,18 @@
+/**
+ * frontend/src/components/FileUpload.tsx
+ *
+ * Purpose:
+ *  - Small drag-and-drop / browse file input specialized for .xyz molecular
+ *    files. Validates simple XYZ format and exposes file content to the parent
+ *    via `onFileSelect(content, fileName)`.
+ *
+ * Exports:
+ *  - default: FileUpload component
+ *
+ * Usage:
+ *  <FileUpload onFileSelect={(content, name) => { ... }} />
+ */
+
 import React, { useState, useCallback, DragEvent } from 'react'
 import { FiUpload, FiX, FiFile } from 'react-icons/fi'
 

@@ -31,17 +31,22 @@ This approach gets the best of both worlds:
 
 ```
 QUANTUM_FORGE/
-├── backend/                  # Core simulation backend (under active development)
-├── frontend/                 # React-based web interface (under active development)
-├── notebooks/                # Jupyter notebooks for interactive exploration
-├── docs/                     # Documentation and tutorials
-├── scripts/                  # Development and deployment scripts
-├── ai/                       # AI/ML components (planned)                 
-├── deploy/                   # Deployment configurations (planned)
-├── data/                     # Simulation data and results (planned)
-├── tests/                    # Test suite
-├── requirements.txt           # Python dependencies
-└── README.md                # This file
+├── backend/                  # Core simulation engine
+│   ├── api/                 # FastAPI application
+│   ├── core/                # Core business logic
+│   ├── simulation/          # Simulation components
+│   └── db/                  # Data persistence
+├── frontend/                # React-based web interface
+│   ├── src/                # Application source
+│   └── public/             # Static assets
+├── docs/                    # Documentation and guides
+│   ├── api/                # API documentation
+│   └── tutorials/          # User guides
+├── data/                    # Simulation data
+├── tests/                   # Test suite
+└── requirements.txt        # Python dependencies
+
+For development environment setup, see `.devtools/SETUP.md`
 ```
 
 ---

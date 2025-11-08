@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import PageBreadcrumb from "../../components/common/PageBreadCrumb";
 import ResponsiveImage from "../../components/ui/images/ResponsiveImage";
 import TwoColumnImageGrid from "../../components/ui/images/TwoColumnImageGrid";

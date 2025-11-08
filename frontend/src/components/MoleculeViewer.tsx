@@ -1,3 +1,18 @@
+/**
+ * frontend/src/components/MoleculeViewer.tsx
+ *
+ * Purpose:
+ *  - Render a simple 2D/2.5D canvas-based visualization of an XYZ molecule.
+ *    Parses XYZ content and draws atoms and bonds. Optionally toggles between
+ *    input and optimized geometries when provided.
+ *
+ * Exports:
+ *  - default: MoleculeViewer component
+ *
+ * Usage:
+ *  <MoleculeViewer xyz_content={xyz} optimized_geometry={opt_xyz} />
+ */
+
 import React, { useEffect, useRef } from 'react'
 
 interface MoleculeViewerProps {

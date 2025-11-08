@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { formatDistanceToNow, parseISO } from 'date-fns'
 
 export const formatFileSize = (bytes: number): string => {

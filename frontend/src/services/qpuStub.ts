@@ -1,22 +1,22 @@
-// NOTE (permanent): This file contains educational notes for non-coders.
-// Do not remove comments unless explicitly requested in a written instruction.
-// These notes explain purpose, props, and data contract shapes.
-//
-// Module Purpose: Stub implementation for quantum processing unit (QPU) operations
-// What this file renders: N/A (stub functions only)
-// How it fits into the Quantum Forge app: Provides a placeholder for quantum
-// computing operations that will be replaced with real QPU calls in production
-// Author: Qwen 3 Coder — Scaffold Stage
-
 /**
- * QPU Stub Service
- * 
- * This module provides stub implementations of quantum processing unit operations.
- * It simulates the behavior of a real quantum computer for development and testing.
- * 
- * For non-coders: This is a "pretend" quantum computer that simulates what a real
- * quantum processor would do. In production, these functions would be replaced
- * with actual calls to real quantum hardware or quantum cloud services.
+ * frontend/src/services/qpuStub.ts
+ *
+ * Purpose:
+ *  - Provide development-time stub implementations for QPU operations (VQE, job
+ *    status). These simulate latency and return deterministic mock data so the
+ *    frontend can be developed and tested without real quantum hardware.
+ *
+ * Exports:
+ *  - runVQEStub(params: VqeParams): Promise<QpuJob>
+ *  - getJobStatusStub(jobId: string): Promise<QpuJob>
+ *
+ * Behavior:
+ *  - Generates fake job IDs, simulates delays, and returns mock energies.
+ *  - Keep this module lightweight and deterministic; replace in production
+ *    with a real QPU adapter that implements the same export signatures.
+ *
+ * Example:
+ *  const job = await runVQEStub({ molecule: 'H2', basis: 'sto-3g', qubits: 2, shots: 100, optimizer: 'SPSA' })
  */
 
 // Type definitions for QPU operations

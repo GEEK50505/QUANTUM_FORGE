@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 export default function FourIsToThree() {
   return (
     <div className="aspect-4/3 overflow-hidden rounded-lg">

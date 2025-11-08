@@ -6,7 +6,7 @@ from pathlib import Path
 from datetime import datetime
 
 from backend.simulation.classical_sim.xtb_parser import XTBLogParser
-from backend.simulation.classical_sim.xtb_runner import XTBRunner
+from backend.core.compat import XTBRunner
 
 
 @pytest.fixture

@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 export default function TwoColumnImageGrid() {
   return (
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">

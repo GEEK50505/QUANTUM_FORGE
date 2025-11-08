@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { FC, ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
 import { clsx } from "clsx";

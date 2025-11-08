@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 export default function OneIsToOne() {
   return (
     <div className="overflow-hidden rounded-lg aspect-square">

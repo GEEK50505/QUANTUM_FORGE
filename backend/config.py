@@ -54,6 +54,8 @@ class LogConfig:
     """Logging configuration"""
     LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
     LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    # Directory to write log files to. Tests and code expect this attribute to exist
+    LOG_DIR = os.getenv("LOG_DIR", "./logs/")
 
 
 def validate_environment() -> bool:

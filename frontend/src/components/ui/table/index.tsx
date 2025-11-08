@@ -1,3 +1,10 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
 import { ReactNode } from "react";
 
 // Props for Table
@@ -61,4 +68,12 @@ const TableCell: React.FC<TableCellProps> = ({
   return <CellTag className={` ${className}`}>{children}</CellTag>;
 };
 
+// Attach subcomponents to the main Table component for backwards compatibility
+;(Table as any).Head = TableHeader;
+;(Table as any).Body = TableBody;
+;(Table as any).Row = TableRow;
+;(Table as any).HeaderCell = (props: any) => <TableCell isHeader {...props} />;
+;(Table as any).Cell = TableCell;
+
 export { Table, TableHeader, TableBody, TableRow, TableCell };
+export default Table as any;

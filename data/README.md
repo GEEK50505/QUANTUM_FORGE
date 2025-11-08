@@ -14,7 +14,8 @@ data/
 ├── datasets/            # Training and test datasets
 ├── benchmarks/          # Performance benchmarks
 ├── experiments/         # Experimental data
-└── archives/           # Archived historical data
+├── archives/        # Archived historical data
+└── molecules/        # molecules data
 ```
 
 ## Development Status
