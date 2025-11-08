@@ -1,0 +1,36 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Roo Code Key Tester",
+            "type": "shell",
+            "command": "cd ${workspaceFolder} && . .venv/bin/activate && python scripts/roo_proxy/key_tester.py --keys-file scripts/roo_proxy/keys.json --working-file scripts/roo_proxy/working_keys.json --max-retries 2 --backoff-base 2 --backoff-max 8",
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated",
+                "close": false
+            },
+            "problemMatcher": []
+        }
+            ,
+            {
+                "label": "Start Vite Dev Server",
+                "type": "shell",
+                "command": ". .venv/bin/activate && cd frontend && npm run dev",
+                "isBackground": true,
+                "runOptions": {
+                    "runOn": "folderOpen"
+                },
+                "presentation": {
+                    "reveal": "silent",
+                    "panel": "dedicated",
+                    "close": false
+                },
+                "problemMatcher": []
+            }
+    ]
+}

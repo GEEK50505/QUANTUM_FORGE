@@ -1,31 +1,19 @@
 {
-  // Use the project-local virtual environment in .venv by default
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-  // When opening a new integrated terminal, activate the virtualenv automatically
   "python.terminal.activateEnvironment": true,
-  // Optional: recommend extensions
+  "python.analysis.typeCheckingMode": "basic",
+  "python.linting.enabled": true,
+  "python.linting.ruffEnabled": true,
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/*.pyc": true
+  },
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}"
+  ],
   "extensions.recommendations": [
     "ms-python.python",
     "ms-azuretools.vscode-docker"
   ]
-}
-{
-    "rooscode.proxyEnabled": true,
-    "rooscode.automaticStartup": true,
-    "rooscode.enableAutoKeyRotation": true,
-    // Continue extension configuration
-    "continue.provider": "openrouter",
-    "continue.openrouter.model": "qwen-3-coder-free",
-    // Editor settings
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll": "explicit"
-    },
-    "files.exclude": {
-        "**/__pycache__": true,
-        "**/*.pyc": true
-    },
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}"
-    ]
 }
