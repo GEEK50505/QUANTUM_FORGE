@@ -5,10 +5,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
-import logging
 import time
-from typing import Optional
-import os
 
 from backend.config import XTBConfig, AppConfig, validate_environment, get_logger
 from backend.api.routes import router
@@ -102,7 +99,8 @@ async def root():
 async def health_check():
     """Health check endpoint"""
     try:
-        xtb_config = XTBConfig()
+        # instantiate to validate xTB availability; no local variable required
+        XTBConfig()
         return {"status": "healthy", "xTB": "available"}
     except Exception as e:
         return {"status": "unhealthy", "xTB": str(e)}

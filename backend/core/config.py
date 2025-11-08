@@ -2,7 +2,6 @@
 Configuration management for QUANTUM_FORGE logging and automation.
 """
 import os
-from pathlib import Path
 
 
 class Config:

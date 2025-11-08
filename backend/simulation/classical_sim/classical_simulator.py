@@ -31,7 +31,6 @@ In the hybrid approach:
 """
 
 import numpy as np
-from typing import Tuple, List, Optional
 
 class ClassicalSimulator:
     """

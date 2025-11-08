@@ -5,7 +5,6 @@ logger factory during the refactor. This delegates to
 `backend.config.get_logger` (the existing project logger) to avoid
 changing runtime behaviour.
 """
-from typing import Any
 import logging
 
 from backend.config import get_logger as _project_get_logger

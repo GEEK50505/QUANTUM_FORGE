@@ -2,7 +2,6 @@
 Centralized logging configuration for QUANTUM_FORGE platform.
 """
 import logging
-import os
 from pathlib import Path
 from contextlib import contextmanager
 from typing import Optional

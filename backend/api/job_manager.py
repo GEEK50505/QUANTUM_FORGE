@@ -1,15 +1,13 @@
 """
 Manage job lifecycle with xTB integration.
 """
-import os
-import json
 import uuid
 import logging
 import threading
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
-from backend.config import XTBConfig, AppConfig
+from backend.config import XTBConfig
 from backend.core.logging import get_logger
 from backend.core.xtb_runner import XTBRunner
 from backend.db.job_store import JobStore

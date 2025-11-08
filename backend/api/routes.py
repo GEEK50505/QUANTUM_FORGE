@@ -2,8 +2,7 @@
 REST endpoints that trigger xTB execution.
 """
 from fastapi import APIRouter, HTTPException, Query
-from typing import List, Optional, Dict
-import logging
+from typing import Optional, Dict
 import json
 from pathlib import Path
 from datetime import datetime

@@ -4,7 +4,6 @@ Environment and xTB configuration for Quantum_Forge platform.
 import os
 import logging
 from pathlib import Path
-from typing import Optional
 
 
 class XTBConfig:

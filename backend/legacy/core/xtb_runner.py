@@ -11,7 +11,6 @@ edit the canonical implementation at `backend/core/xtb_runner.py`.
 import subprocess
 import json
 import logging
-import tempfile
 from pathlib import Path
 from typing import Dict, Optional
 from backend.config import XTBConfig, get_logger

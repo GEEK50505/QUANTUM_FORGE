@@ -33,8 +33,6 @@ The Workflow:
 
 import numpy as np
 from typing import Tuple, List, Optional
-import sys
-import os
 
 # Import modules from the backend package
 from backend.simulation.classical_sim.classical_simulator import ClassicalSimulator
@@ -215,7 +213,8 @@ class HybridSimulator:
         
         # Run the hybrid simulation
         for step in range(num_steps):
-            energy = self.run_hybrid_step(dt, quantum_frequency)
+            # run_hybrid_step updates internal energy history; no local value needed
+            self.run_hybrid_step(dt, quantum_frequency)
             
             # Print progress every 10 steps
             if (step + 1) % 10 == 0:
@@ -295,7 +294,7 @@ if __name__ == "__main__":
     )
     
     # Show final results
-    print(f"\n📊 Final Results:")
+    print("\n📊 Final Results:")
     print(f"  Initial energy: {energy_history[0]:.6f}")
     print(f"  Final energy: {energy_history[-1]:.6f}")
     print(f"  Energy change: {energy_history[-1] - energy_history[0]:.6f}")
@@ -304,9 +303,9 @@ if __name__ == "__main__":
     quantum_results = hybrid_sim.get_quantum_results()
     if quantum_results is not None:
         eigenvalues, eigenvectors = quantum_results
-        print(f"\n⚛️  Quantum Results:")
+        print("\n⚛️  Quantum Results:")
         print(f"  Ground state energy: {eigenvalues[0]:.6f} Hartree")
         print(f"  First excited state: {eigenvalues[1]:.6f} Hartree")
     
-    print(f"\n🎉 Hybrid simulation demo complete!")
+    print("\n🎉 Hybrid simulation demo complete!")
     print("This shows how classical and quantum methods work together")

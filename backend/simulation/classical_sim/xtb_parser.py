@@ -1,16 +1,8 @@
-"""
-Parse xTB output logs with comprehensive logging.
-"""
-import re
-import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from backend.core.logger import setup_logger
+"""Parse xTB output logs with comprehensive logging.
 
-"""
 Compatibility shim for `XTBLogParser`.
 
-This module now delegates to the canonical parser at `backend.core.parsers`.
+This module delegates to the canonical parser at `backend.core.parsers`.
 Keeping this shim at the original import path preserves backwards
 compatibility for scripts and tests while centralizing parsing logic.
 """

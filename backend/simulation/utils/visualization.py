@@ -33,7 +33,7 @@ In the hybrid simulation context:
 
 import numpy as np
 import matplotlib.pyplot as plt
-from typing import List, Tuple, Optional
+from typing import List
 import matplotlib.animation as animation
 
 class SimulationVisualizer:
@@ -111,7 +111,7 @@ class SimulationVisualizer:
         
         plt.show()
         
-        print(f"Energy plot displayed:")
+        print("Energy plot displayed:")
         print(f"  Mean energy: {mean_energy:.6f}")
         print(f"  Energy range: [{min(energy_history):.4f}, {max(energy_history):.4f}]")
     
@@ -277,11 +277,17 @@ class SimulationVisualizer:
             return scatter,
         
         # Create animation
-        anim = animation.FuncAnimation(fig, animate, frames=len(positions_history),
-                                     interval=interval, blit=True, repeat=True)
-        
+        _anim = animation.FuncAnimation(
+            fig,
+            animate,
+            frames=len(positions_history),
+            interval=interval,
+            blit=True,
+            repeat=True,
+        )
+
         plt.show()
-        
+
         print(f"Animation created with {len(positions_history)} frames")
         print("Close the window to continue...")
     
@@ -342,7 +348,7 @@ class SimulationVisualizer:
         print("Energy comparison displayed:")
         print(f"  Mean difference: {mean_diff:.6f}")
         print(f"  Max difference: {max_diff:.6f}")
-        print(f"  This shows how quantum corrections improve classical results")
+        print("  This shows how quantum corrections improve classical results")
 
 # ============================================================
 # Module Summary:
@@ -406,5 +412,5 @@ if __name__ == "__main__":
     quantum_energies = [e + 0.5 + 0.1 * np.random.randn() for e in classical_energies]
     visualizer.plot_comparison(classical_energies, quantum_energies)
     
-    print(f"\n🎉 Visualization demo complete!")
+    print("\n🎉 Visualization demo complete!")
     print("These tools help transform raw simulation data into insights")

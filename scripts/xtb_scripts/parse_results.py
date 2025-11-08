@@ -4,7 +4,6 @@ Standalone parser script to extract data from existing logs.
 """
 import argparse
 import csv
-import json
 import sys
 import os
 from pathlib import Path

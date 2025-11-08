@@ -31,9 +31,7 @@ In the hybrid approach:
 """
 
 import numpy as np
-from typing import Tuple, List, Optional
-from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import eigsh
+from typing import Tuple
 
 class QuantumSolver:
     """
@@ -136,8 +134,8 @@ class QuantumSolver:
         
         Where φ_i are basis functions.
         """
-        num_atoms = len(atomic_positions)
-        
+    # number of atoms available if needed by future extensions
+    # num_atoms = len(atomic_positions)
         # Simplified Hamiltonian construction for demonstration
         # In practice, this would involve complex integral calculations
         
@@ -158,12 +156,12 @@ class QuantumSolver:
         for i in range(self.num_orbitals):
             for j in range(self.num_orbitals):
                 for k in range(self.num_orbitals):
-                    for l in range(self.num_orbitals):
-                        # Simplified Coulomb interaction
-                        if i == k and j == l:
-                            self.two_electron_integrals[i, j, k, l] = 1.0
-                        elif i == l and j == k:
-                            self.two_electron_integrals[i, j, k, l] = 0.5
+                        for m in range(self.num_orbitals):
+                            # Simplified Coulomb interaction
+                            if i == k and j == m:
+                                self.two_electron_integrals[i, j, k, m] = 1.0
+                            elif i == m and j == k:
+                                self.two_electron_integrals[i, j, k, m] = 0.5
         
         # Build the full Hamiltonian matrix
         # Educational Note: This is where we combine all terms
@@ -184,9 +182,9 @@ class QuantumSolver:
                 coulomb = 0.0
                 exchange = 0.0
                 for k in range(self.num_orbitals):
-                    for l in range(self.num_orbitals):
-                        coulomb += density_matrix[k, l] * self.two_electron_integrals[i, j, k, l]
-                        exchange -= 0.5 * density_matrix[k, l] * self.two_electron_integrals[i, l, k, j]
+                    for m in range(self.num_orbitals):
+                        coulomb += density_matrix[k, m] * self.two_electron_integrals[i, j, k, m]
+                        exchange -= 0.5 * density_matrix[k, m] * self.two_electron_integrals[i, m, k, j]
                 hamiltonian[i, j] += coulomb + exchange
         
         return hamiltonian
@@ -255,7 +253,7 @@ class QuantumSolver:
         
         total_energy = ground_state_energy + nuclear_energy
         
-        print(f"Quantum calculation complete!")
+        print("Quantum calculation complete!")
         print(f"  Electronic energy: {ground_state_energy:.6f} Hartree")
         print(f"  Nuclear energy: {nuclear_energy:.6f} Hartree")
         print(f"  Total energy: {total_energy:.6f} Hartree")
@@ -328,13 +326,13 @@ if __name__ == "__main__":
     ])
     
     print("H₂ molecule configuration:")
-    print(f"  H1 at [0.0, 0.0, 0.0] Å")
-    print(f"  H2 at [0.74, 0.0, 0.0] Å")
+    print("  H1 at [0.0, 0.0, 0.0] Å")
+    print("  H2 at [0.74, 0.0, 0.0] Å")
     print()
     
     # Calculate the quantum mechanical energy
     total_energy = solver.calculate_electronic_energy(h2_positions)
     
-    print(f"\n=== Quantum Calculation Complete ===")
+    print("\n=== Quantum Calculation Complete ===")
     print(f"Total energy for H₂: {total_energy:.6f} Hartree")
     print("(This is the quantum mechanical ground state energy)")

@@ -9,7 +9,6 @@ from pathlib import Path
 import json
 from typing import Any, Dict, Optional
 import hashlib
-import logging
 from backend.core.logger import setup_logger
 
 
