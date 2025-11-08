@@ -1,17 +1,20 @@
 {
-  // Continue extension configuration — use OpenRouter and the Qwen-3-Coder free model.
-  // The extension should read the API key from the OPENROUTER_API_KEY environment variable.
-  "continue.provider": "openrouter",
-  "continue.openrouter.model": "qwen-3-coder-free",
-  "continue.openrouter.apiKeyEnv": "OPENROUTER_API_KEY",
-
-  // Roo Code extension configuration
-  "rooCode.apiBaseUrl": "http://localhost:3002",
-  "rooCode.autoStart": true,
-  "rooCode.enableAutoKeyRotation": true,
-
-  // Python path for scripts
-  "python.analysis.extraPaths": [
-    "${workspaceFolder}"
-  ]
+    "rooscode.proxyEnabled": true,
+    "rooscode.automaticStartup": true,
+    "rooscode.enableAutoKeyRotation": true,
+    // Continue extension configuration
+    "continue.provider": "openrouter",
+    "continue.openrouter.model": "qwen-3-coder-free",
+    // Editor settings
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true
+    },
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}"
+    ]
 }

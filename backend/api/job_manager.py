@@ -1,86 +1,95 @@
+"""
+Manage job lifecycle with xTB integration.
+"""
 import os
 import json
 import uuid
+import logging
+import threading
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional
-import logging
-import asyncio
-
-from .schemas import JobSubmitRequest, JobStatus
+from backend.config import XTBConfig, AppConfig, get_logger
+from backend.core.xtb_runner import XTBRunner
 
 
 class JobManager:
-    """Manage xTB job submission, queueing, and execution"""
+    """Manage job lifecycle with xTB integration."""
     
-    def __init__(self, workdir: str = './jobs', logger=None):
+    def __init__(self, xtb_config: XTBConfig, logger: Optional[logging.Logger] = None):
         """
-        Initialize JobManager
+        Initialize JobManager.
         
         Args:
-            workdir: Directory to store job files
-            logger: Logger instance
+            xtb_config: XTBConfig instance
+            logger: Optional logger instance
         """
-        self.workdir = Path(workdir)
-        self.workdir.mkdir(parents=True, exist_ok=True)
-        self.logger = logger or logging.getLogger(__name__)
+        self.xtb_config = xtb_config
+        self.logger = logger or get_logger(__name__)
+        self.logger.info("Initializing JobManager")
         
-    def submit_job(self, job_request: JobSubmitRequest) -> str:
+        # Create directories
+        Path(self.xtb_config.JOBS_DIR).mkdir(parents=True, exist_ok=True)
+        Path(self.xtb_config.WORKDIR).mkdir(parents=True, exist_ok=True)
+    
+    def submit_job(self, job_request: Dict) -> str:
         """
-        Submit a new job
+        Submit a new job.
         
         Args:
-            job_request: Job submission request
+            job_request: Job request data
             
         Returns:
-            str: Unique job ID
+            Job ID
         """
         # Generate unique job_id
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         unique_id = str(uuid.uuid4())[:8]
-        job_id = f"{job_request.molecule_name}_{timestamp}_{unique_id}"
+        job_id = f"{job_request['molecule_name']}_{timestamp}_{unique_id}"
+        
+        self.logger.info(f"Job {job_id} submitted by {job_request.get('email', 'unknown')}")
         
         # Create job directory
-        job_dir = self.workdir / job_id
+        job_dir = Path(self.xtb_config.JOBS_DIR) / job_id
         job_dir.mkdir(parents=True, exist_ok=True)
         
         # Save xyz file
-        xyz_path = job_dir / f"{job_request.molecule_name}.xyz"
+        xyz_path = job_dir / f"{job_request['molecule_name']}.xyz"
         with open(xyz_path, 'w') as f:
-            f.write(job_request.xyz_content)
+            f.write(job_request['xyz_content'])
         
         # Save job metadata
         job_metadata = {
             "job_id": job_id,
-            "molecule_name": job_request.molecule_name,
-            "optimization_level": job_request.optimization_level,
-            "email": job_request.email,
-            "tags": job_request.tags,
-            "status": JobStatus.QUEUED,
+            "molecule_name": job_request['molecule_name'],
+            "optimization_level": job_request.get('optimization_level', 'normal'),
+            "email": job_request.get('email', ''),
+            "tags": job_request.get('tags', []),
+            "status": "QUEUED",
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat(),
-            "xyz_file": str(xyz_path.relative_to(self.workdir))
+            "xyz_file": str(xyz_path.relative_to(self.xtb_config.JOBS_DIR))
         }
         
         metadata_path = job_dir / "metadata.json"
         with open(metadata_path, 'w') as f:
             json.dump(job_metadata, f, indent=2)
         
-        self.logger.info(f"Job {job_id} created")
+        self.logger.info(f"Job {job_id} created and queued")
         
         return job_id
-        
+    
     def get_job_status(self, job_id: str) -> Optional[Dict]:
         """
-        Get job status
+        Get job status.
         
         Args:
             job_id: Job identifier
             
         Returns:
-            Dict: Job status information or None if not found
+            Job status information or None if not found
         """
-        job_dir = self.workdir / job_id
+        job_dir = Path(self.xtb_config.JOBS_DIR) / job_id
         
         if not job_dir.exists():
             self.logger.warning(f"Job {job_id} not found")
@@ -101,82 +110,78 @@ class JobManager:
         except Exception as e:
             self.logger.error(f"Error reading job metadata for {job_id}: {str(e)}")
             return None
-            
-    async def execute_job(self, job_id: str) -> None:
+    
+    def execute_job(self, job_id: str) -> None:
         """
-        Execute xTB job
+        Execute xTB job.
         
         Args:
             job_id: Job identifier
         """
-        job_dir = self.workdir / job_id
+        job_dir = Path(self.xtb_config.JOBS_DIR) / job_id
         
         if not job_dir.exists():
             self.logger.error(f"Job {job_id} not found")
             return
-            
+        
         # Update job status to RUNNING
         metadata_path = job_dir / "metadata.json"
         try:
             with open(metadata_path, 'r') as f:
                 job_metadata = json.load(f)
                 
-            job_metadata["status"] = JobStatus.RUNNING
+            job_metadata["status"] = "RUNNING"
             job_metadata["updated_at"] = datetime.utcnow().isoformat()
             
             with open(metadata_path, 'w') as f:
                 json.dump(job_metadata, f, indent=2)
                 
-            self.logger.info(f"Job {job_id} status updated to RUNNING")
+            self.logger.info(f"Starting execution for job {job_id}")
             
-            # TODO: Execute xTB calculation using XTBRunner
-            # This would integrate with the existing xTB automation system
-            # For now, we'll simulate the execution
+            # Get XYZ file path
+            xyz_file_path = job_dir / job_metadata["xyz_file"]
             
-            await asyncio.sleep(2)  # Simulate processing time
+            # Execute xTB calculation
+            xtb_runner = XTBRunner(self.xtb_config, self.logger)
+            results = xtb_runner.execute(
+                str(xyz_file_path),
+                job_id,
+                job_metadata.get("optimization_level", "normal")
+            )
             
-            # Simulate results
-            results = {
-                "energy": -14.42,
-                "homo_lumo_gap": 0.117,
-                "gradient_norm": 0.0027,
-                "charges": [0.1, -0.2, 0.15, -0.05, 0.0, 0.0],
-                "convergence_status": "CONVERGED",
-                "properties": {
-                    "total_energy": -14.42,
-                    "electronic_energy": -14.45,
-                    "nuclear_repulsion_energy": 0.03,
-                    "gradient_norm": 0.0027,
-                    "homo_energy": -0.15,
-                    "lumo_energy": -0.033,
-                    "dipole_moment": 0.0
-                }
-            }
+            if results["success"]:
+                # Save results
+                results_path = job_dir / "results.json"
+                with open(results_path, 'w') as f:
+                    json.dump(results, f, indent=2)
+                
+                # Update job status to COMPLETED
+                job_metadata["status"] = "COMPLETED"
+                job_metadata["updated_at"] = datetime.utcnow().isoformat()
+                job_metadata["results_file"] = str(results_path.relative_to(self.xtb_config.JOBS_DIR))
+                
+                self.logger.info(f"Job {job_id} completed successfully - Energy: {results['energy']}")
+            else:
+                # Update job status to FAILED
+                job_metadata["status"] = "FAILED"
+                job_metadata["error_message"] = results["error"]
+                job_metadata["updated_at"] = datetime.utcnow().isoformat()
+                
+                self.logger.error(f"Job {job_id} failed: {results['error']}")
             
-            # Save results
-            results_path = job_dir / "results.json"
-            with open(results_path, 'w') as f:
-                json.dump(results, f, indent=2)
-            
-            # Update job status to COMPLETED
-            job_metadata["status"] = JobStatus.COMPLETED
-            job_metadata["updated_at"] = datetime.utcnow().isoformat()
-            job_metadata["results_file"] = str(results_path.relative_to(self.workdir))
-            
+            # Save updated metadata
             with open(metadata_path, 'w') as f:
                 json.dump(job_metadata, f, indent=2)
                 
-            self.logger.info(f"Job {job_id} completed successfully")
-            
         except Exception as e:
-            self.logger.error(f"Error executing job {job_id}: {str(e)}")
+            self.logger.error(f"Error executing job {job_id}: {str(e)}", exc_info=True)
             
             # Update job status to FAILED
             try:
                 with open(metadata_path, 'r') as f:
                     job_metadata = json.load(f)
                     
-                job_metadata["status"] = JobStatus.FAILED
+                job_metadata["status"] = "FAILED"
                 job_metadata["error_message"] = str(e)
                 job_metadata["updated_at"] = datetime.utcnow().isoformat()
                 
@@ -185,29 +190,32 @@ class JobManager:
                     
             except Exception as update_error:
                 self.logger.error(f"Error updating job status for {job_id}: {str(update_error)}")
-                
-    def list_jobs(self, status: str = None, limit: int = 50, offset: int = 0) -> List[Dict]:
+    
+    def list_jobs(self, status: str = None, limit: int = 50) -> List[Dict]:
         """
-        List jobs with optional filtering
+        List jobs with optional filtering.
         
         Args:
             status: Filter by status
             limit: Maximum number of jobs to return
-            offset: Number of jobs to skip
             
         Returns:
-            List[Dict]: List of job information
+            List of job information
         """
         jobs = []
         
         # Get all job directories
-        job_dirs = [d for d in self.workdir.iterdir() if d.is_dir()]
+        jobs_dir = Path(self.xtb_config.JOBS_DIR)
+        if not jobs_dir.exists():
+            return []
+            
+        job_dirs = [d for d in jobs_dir.iterdir() if d.is_dir()]
         
         # Sort by creation time (newest first)
         job_dirs.sort(key=lambda x: x.stat().st_ctime, reverse=True)
         
-        # Apply offset and limit
-        job_dirs = job_dirs[offset:offset + limit]
+        # Apply limit
+        job_dirs = job_dirs[:limit]
         
         for job_dir in job_dirs:
             metadata_path = job_dir / "metadata.json"
@@ -224,4 +232,21 @@ class JobManager:
                     self.logger.error(f"Error reading metadata for job {job_dir.name}: {str(e)}")
                     continue
                     
+        self.logger.info(f"Listed {len(jobs)} jobs (status={status}, limit={limit})")
         return jobs
+    
+    def run_job_async(self, job_id: str) -> None:
+        """
+        Run job asynchronously in background thread.
+        
+        Args:
+            job_id: Job identifier
+        """
+        self.logger.info(f"Starting async execution for job {job_id}")
+        
+        # Use threading to execute job in background
+        thread = threading.Thread(target=self.execute_job, args=(job_id,))
+        thread.daemon = True
+        thread.start()
+        
+        self.logger.info(f"Job {job_id} thread started")

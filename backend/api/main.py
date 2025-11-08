@@ -1,3 +1,6 @@
+"""
+FastAPI app with xTB config, CORS, logging middleware.
+"""
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -6,81 +9,72 @@ import logging
 import time
 from typing import Optional
 import os
-from dotenv import load_dotenv
 
-from .routes import router
-from .config import Config
-
-# Load environment variables
-load_dotenv()
+from backend.config import XTBConfig, AppConfig, validate_environment, get_logger
+from backend.api.routes import router
 
 # Configure logging
-logging.basicConfig(
-    level=getattr(logging, Config.LOG_LEVEL, logging.INFO),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
+
+def log_requests_middleware(app: FastAPI):
+    """Add request logging middleware"""
+    @app.middleware("http")
+    async def log_requests(request: Request, call_next):
+        """Middleware to log all requests and responses"""
+        start_time = time.time()
+        
+        # Log request
+        logger.info(f"{request.method} {request.url}")
+        
+        try:
+            response = await call_next(request)
+            
+            # Log response
+            process_time = time.time() - start_time
+            logger.info(f"{response.status_code} OK ({process_time*1000:.0f}ms)")
+            
+            return response
+        except Exception as e:
+            logger.error(f"Request failed: {str(e)}")
+            raise
+    
+    return app
+
+# Validate environment on startup
+logger.info("Validating environment...")
+if not validate_environment():
+    logger.error("Environment validation failed")
+    raise RuntimeError("Environment validation failed")
 
 # Create FastAPI app
 app = FastAPI(
-    title=Config.API_TITLE,
-    version=Config.API_VERSION,
-    description="QUANTUM_FORGE xTB job management API",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    title="Quantum_Forge",
+    version="0.1.0",
+    description="Quantum molecular simulation platform with xTB integration"
 )
+
+# Add logging middleware
+app = log_requests_middleware(app)
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=Config.CORS_ORIGINS,
+    allow_origins=[AppConfig.FRONTEND_URL, "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
 )
 
-# Request/response logging middleware
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    """Middleware to log all requests and responses"""
-    start_time = time.time()
-    
-    # Log request
-    logger.info(f"Request: {request.method} {request.url}")
-    
-    try:
-        response = await call_next(request)
-        
-        # Log response
-        process_time = time.time() - start_time
-        logger.info(f"Response: {response.status_code} - {process_time:.2f}s")
-        
-        return response
-    except Exception as e:
-        logger.error(f"Request failed: {str(e)}")
-        raise
-
-# Request timing middleware
-@app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
-    """Middleware to add processing time header"""
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-    return response
-
-# Exception handler
+# Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler"""
-    logger.error(f"Global exception handler caught: {str(exc)}", exc_info=True)
+    logger.error(f"Global exception: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "error_code": "INTERNAL_SERVER_ERROR",
-            "error_message": "An unexpected error occurred"
+            "error": "Internal server error",
+            "message": "An unexpected error occurred"
         }
     )
 
@@ -89,10 +83,10 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     """Validation exception handler"""
     logger.error(f"Validation error: {exc.errors()}")
     return JSONResponse(
-        status_code=status.HTTP_422_UNVALIDATABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
-            "error_code": "VALIDATION_ERROR",
-            "error_message": "Request validation failed",
+            "error": "Validation error",
+            "message": "Request validation failed",
             "details": exc.errors()
         }
     )
@@ -101,13 +95,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"status": "ok", "version": Config.API_VERSION}
+    return {"status": "ok", "version": "0.1.0"}
 
 # Health check endpoint
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy"}
+    try:
+        xtb_config = XTBConfig()
+        return {"status": "healthy", "xTB": "available"}
+    except Exception as e:
+        return {"status": "unhealthy", "xTB": str(e)}
 
 # Include routes
 app.include_router(router)
@@ -116,14 +114,23 @@ app.include_router(router)
 @app.on_event("startup")
 async def startup_event():
     """Startup event handler"""
-    logger.info("QUANTUM_FORGE API starting up...")
+    logger.info("API server starting")
     
-    # Create jobs directory if it doesn't exist
-    os.makedirs(Config.JOBS_DIR, exist_ok=True)
-    logger.info(f"Jobs directory ready: {Config.JOBS_DIR}")
+    # Validate xTB configuration
+    try:
+        xtb_config = XTBConfig()
+        logger.info(f"xTB executable: {xtb_config.XTB_EXECUTABLE}")
+        logger.info(f"Working directory: {xtb_config.WORKDIR}")
+        logger.info(f"Jobs directory: {xtb_config.JOBS_DIR}")
+        logger.info(f"Log directory: {xtb_config.LOG_DIR}")
+    except Exception as e:
+        logger.error(f"xTB configuration error: {e}")
+        raise
+    
+    logger.info("API server ready")
 
 # Shutdown event
 @app.on_event("shutdown")
 async def shutdown_event():
     """Shutdown event handler"""
-    logger.info("QUANTUM_FORGE API shutting down...")
+    logger.info("API server shutting down")
