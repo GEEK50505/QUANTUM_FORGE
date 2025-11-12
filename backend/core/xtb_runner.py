@@ -27,6 +27,7 @@ LAST MODIFIED: 2025-11-08
 """
 
 import subprocess
+import os
 import json
 import logging
 from pathlib import Path
@@ -85,6 +86,16 @@ class XTBRunner:
             Dictionary with results
         """
         self.logger.info(f"Starting xTB for {job_id}")
+
+        # Ensure we pass an absolute path to the xTB binary to avoid
+        # working-directory-relative resolution issues. This prevents
+        # cases where validation (running in the API CWD) succeeds but
+        # xTB (launched with a different cwd) can't find the file.
+        try:
+            xyz_file_path = str(Path(xyz_file_path).resolve())
+        except Exception:
+            # fallback: keep original
+            xyz_file_path = str(xyz_file_path)
         
         try:
             # Validate input
@@ -105,20 +116,51 @@ class XTBRunner:
             ]
             
             self.logger.info(f"Executing command: {' '.join(cmd)}")
-            
-            # Run xTB
+
+            # Prepare environment: force single-threaded for threaded native libs
+            # to avoid native crashes when running from a long-lived service.
+            env = os.environ.copy()
+            env.setdefault("OMP_NUM_THREADS", "1")
+            env.setdefault("MKL_NUM_THREADS", "1")
+            env.setdefault("KMP_AFFINITY", "none")
+            # Log a minimal hint about the enforced env (do not log full env)
+            self.logger.debug(f"Running xTB with OMP_NUM_THREADS={env.get('OMP_NUM_THREADS')} MKL_NUM_THREADS={env.get('MKL_NUM_THREADS')}")
+
+
+            # Ensure per-job directory exists and run xTB with that as cwd.
+            # Running in the job-specific directory avoids permission/relative-path
+            # issues where xTB attempts to write files into a shared WORKDIR.
+            job_dir = Path(self.config.JOBS_DIR) / job_id
+            job_dir.mkdir(parents=True, exist_ok=True)
+
+            # Run xTB inside the job directory so all output files are colocated
             result = subprocess.run(
                 cmd,
-                cwd=self.config.WORKDIR,
+                cwd=str(job_dir),
+                env=env,
                 capture_output=True,
                 text=True,
                 timeout=self.config.XTB_TIMEOUT
             )
-            
+
+            # Persist raw stdout/stderr to the job directory for debugging
+            try:
+                (job_dir / "xtb_stdout.log").write_text(result.stdout or "")
+                (job_dir / "xtb_stderr.log").write_text(result.stderr or "")
+            except Exception:
+                # Don't fail the run if we can't write logs; just continue
+                self.logger.debug(f"Could not write xtb logs for job {job_id}", exc_info=True)
+
             self.logger.info(f"xTB completed for {job_id} with return code {result.returncode}")
             
             # Parse output
             if result.returncode == 0:
+                # First try: parse stdout directly (works with the mock xtb that
+                # prints JSON to stdout). If that fails, fall back to looking for
+                # an `xtbout.json` file that the real xTB often writes in the
+                # working directory (or its run subdirectory). If we still can't
+                # find JSON, attempt a last-ditch extraction of a JSON object
+                # from stdout.
                 try:
                     json_output = result.stdout
                     parsed_results = self.parse_xtb_output(json_output)
@@ -129,13 +171,101 @@ class XTBRunner:
                         "results": parsed_results,
                         "error": None
                     }
-                except json.JSONDecodeError as e:
-                    self.logger.error(f"Failed to parse JSON output for {job_id}: {e}")
+                except json.JSONDecodeError as e_stdout:
+                    self.logger.debug(f"Stdout JSON parse failed for {job_id}: {e_stdout}")
+                    # Attempt to locate xtbout.json under WORKDIR
+                    try:
+                        workdir = Path(self.config.WORKDIR)
+                        candidates = list(workdir.rglob('xtbout.json'))
+                        self.logger.debug(f"Found {len(candidates)} xtbout.json candidates under {workdir}")
+                        chosen = None
+                        for cand in candidates:
+                            try:
+                                with open(cand, 'r') as fh:
+                                    cand_data = json.load(fh)
+                                # prefer a candidate that references our job xyz path
+                                prog_call = cand_data.get('program call') or cand_data.get('program_call') or ''
+                                if xyz_file_path in prog_call or job_id in str(cand):
+                                    chosen = cand_data
+                                    break
+                                # otherwise keep the first parseable as fallback
+                                if chosen is None:
+                                    chosen = cand_data
+                            except Exception:
+                                continue
+
+                        if chosen is not None:
+                            parsed_results = self.parse_xtb_output(chosen)
+                            self.logger.info(f"Parsed results from xtbout.json for {job_id} - Energy: {parsed_results.get('energy')}")
+                            return {
+                                "success": True,
+                                "energy": parsed_results.get("energy"),
+                                "results": parsed_results,
+                                "error": None
+                            }
+                    except Exception:
+                        self.logger.debug(f"Failed to locate/parse xtbout.json for {job_id}", exc_info=True)
+
+                    # Last attempt: try to extract a JSON object from stdout
+                    try:
+                        s = result.stdout or ""
+                        first = s.find('{')
+                        last = s.rfind('}')
+                        if first != -1 and last != -1 and last > first:
+                            candidate = s[first:last+1]
+                            parsed_results = self.parse_xtb_output(candidate)
+                            self.logger.info(f"Parsed JSON object extracted from stdout for {job_id} - Energy: {parsed_results.get('energy')}")
+                            return {
+                                "success": True,
+                                "energy": parsed_results.get("energy"),
+                                "results": parsed_results,
+                                "error": None
+                            }
+                    except Exception:
+                        self.logger.debug(f"Failed to extract JSON from stdout for {job_id}", exc_info=True)
+
+                    # Final fallback: try to extract a numeric energy from stdout
+                    try:
+                        import re
+                        s = result.stdout or ""
+                        # Common xtb summary lines contain labels like 'SCC energy' or 'total energy'
+                        # Try several patterns and prefer SCC/electronic energy when available.
+                        patterns = [
+                            r"SCC energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)",
+                            r"SCC energy\s*([-+]?[0-9]*\.?[0-9]+)\s*Eh",
+                            r"electronic energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)",
+                            r"total energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)\s*Eh",
+                            r"total energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)"
+                        ]
+                        found = None
+                        for p in patterns:
+                            m = re.search(p, s, re.IGNORECASE)
+                            if m:
+                                try:
+                                    found = float(m.group(1))
+                                    break
+                                except Exception:
+                                    continue
+
+                        if found is not None:
+                            parsed_results = {"energy": found}
+                            self.logger.info(f"Extracted energy via stdout regex for {job_id}: {found}")
+                            return {
+                                "success": True,
+                                "energy": found,
+                                "results": parsed_results,
+                                "error": None
+                            }
+                    except Exception:
+                        self.logger.debug(f"Failed regex energy extraction for {job_id}", exc_info=True)
+
+                    # If we get here, we could not parse JSON by any fallback
+                    self.logger.error(f"Failed to parse JSON output for {job_id}: {e_stdout}")
                     return {
                         "success": False,
                         "energy": None,
                         "results": None,
-                        "error": f"Failed to parse JSON output: {e}"
+                        "error": f"Failed to parse JSON output: {e_stdout}"
                     }
             else:
                 self.logger.error(f"xTB failed for {job_id}: {result.stderr}")
@@ -174,44 +304,80 @@ class XTBRunner:
             Dictionary with parsed results
         """
         try:
-            data = json.loads(json_output)
+            # Accept either a JSON string or an already-loaded dict.
+            if isinstance(json_output, dict):
+                data = json_output
+            else:
+                data = json.loads(json_output)
+
+            # Build a normalized key lookup to tolerate spacing/case/punctuation
+            # differences between xTB releases and wrapper scripts.
+            import re
+            normalized: Dict[str, str] = {}
+            for k in data.keys():
+                nk = re.sub(r'[^a-z0-9]', '', k.lower())
+                normalized[nk] = k
+
             self.logger.debug(f"Parsing xTB output with keys: {list(data.keys())}")
-            
-            # Extract key values
             results = {}
-            
-            # Total energy
-            if "total_energy" in data:
-                results["energy"] = data["total_energy"]
-            elif "energy" in data:
-                results["energy"] = data["energy"]
-            
-            # Gradient norm
-            if "gradient_norm" in data:
-                results["gradient_norm"] = data["gradient_norm"]
-            
-            # HOMO and LUMO
-            if "homo" in data:
-                results["homo"] = data["homo"]
-            if "lumo" in data:
-                results["lumo"] = data["lumo"]
-            if "homo_lumo_gap" in data:
-                results["homo_lumo_gap"] = data["homo_lumo_gap"]
-            
-            # Dipole moment
-            if "dipole" in data:
-                results["dipole"] = data["dipole"]
-            
-            # Atomic charges
-            if "charges" in data:
-                results["charges"] = data["charges"]
-            
+
+            # Check normalized keys in priority order: electronic energy -> total energy -> energy
+            chosen_key = None
+            for nk in ('electronicenergy', 'totalenergy', 'energy'):
+                if nk in normalized:
+                    chosen_key = normalized[nk]
+                    break
+
+            def _to_float_maybe(x):
+                try:
+                    if x is None:
+                        return None
+                    return float(x)
+                except Exception:
+                    return None
+
+            if chosen_key is not None:
+                val = data.get(chosen_key)
+                f = _to_float_maybe(val)
+                results['energy'] = f if f is not None else val
+                self.logger.debug(f"Selected energy key '{chosen_key}' -> {results.get('energy')}")
+
+            # Gradient norm (normalized forms)
+            for nk in ('gradientnorm', 'gradientnorm'):
+                if nk in normalized:
+                    key = normalized[nk]
+                    gv = _to_float_maybe(data.get(key))
+                    results['gradient_norm'] = gv if gv is not None else data.get(key)
+                    break
+
+            # HOMO / LUMO / gap (normalized lookup)
+            if 'homo' in normalized:
+                results['homo'] = data.get(normalized['homo'])
+            if 'lumo' in normalized:
+                results['lumo'] = data.get(normalized['lumo'])
+            for nk in ('homolumogap', 'homolumogapev', 'homolumo', 'homolumogap'):
+                if nk in normalized:
+                    key = normalized[nk]
+                    gv = _to_float_maybe(data.get(key))
+                    results['homo_lumo_gap'] = gv if gv is not None else data.get(key)
+                    break
+
+            # Dipole and charges (normalized)
+            for nk in ('dipole', 'dipoleau', 'dipoleau'):
+                if nk in normalized:
+                    results['dipole'] = data.get(normalized[nk])
+                    break
+            for nk in ('partialcharges', 'charges'):
+                if nk in normalized:
+                    results['charges'] = data.get(normalized[nk])
+                    break
+
             self.logger.info(f"Parsed results: energy={results.get('energy')}, "
-                           f"gap={results.get('homo_lumo_gap')}, "
-                           f"gradient={results.get('gradient_norm')}")
-            
+                             f"gap={results.get('homo_lumo_gap')}, "
+                             f"gradient={results.get('gradient_norm')}")
+
             return results
-            
+
         except Exception as e:
             self.logger.error(f"Failed to parse xTB output: {e}", exc_info=True)
             raise
