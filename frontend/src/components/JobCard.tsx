@@ -15,6 +15,7 @@
 import React from 'react'
 import { FiCopy, FiEye, FiTrash, FiLoader, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi'
 import { JobResponse } from '../types'
+import JobVisualization from './JobVisualization'
 
 interface JobCardProps {
   job: JobResponse
@@ -62,7 +63,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
       const date = new Date(iso)
       const now = new Date()
       const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-      
+
       if (diffInSeconds < 60) return 'just now'
       if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
       if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
@@ -91,9 +92,9 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
                 <span className="ml-1">{job.status}</span>
               </span>
             </div>
-            
+
             <div className="mt-2 flex items-center">
-              <span 
+              <span
                 className="text-sm font-mono text-gray-600 dark:text-gray-400 cursor-pointer hover:text-gray-900 dark:hover:text-white"
                 onClick={copyJobId}
                 title="Click to copy"
@@ -126,14 +127,19 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
               </span>
             </div>
             <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-              <div 
-                className="bg-yellow-500 h-2 rounded-full animate-pulse" 
+              <div
+                className="bg-yellow-500 h-2 rounded-full animate-pulse"
                 style={{ width: '60%' }}
               ></div>
             </div>
           </div>
         )}
-
+        {/* Small preview for completed jobs */}
+        {job.status === 'completed' && job.results && (
+          <div className="mt-4">
+            <JobVisualization results={job.results} />
+          </div>
+        )}
         {job.status === 'failed' && job.error_message && (
           <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 rounded text-sm text-red-700 dark:text-red-300">
             <p className="font-medium">Error:</p>
@@ -149,7 +155,7 @@ const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
             <FiEye className="w-4 h-4 mr-1" />
             {job.status === 'completed' ? 'View Results' : 'Details'}
           </button>
-          
+
           <button
             onClick={() => onDelete(job.job_id)}
             className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-800/30 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"

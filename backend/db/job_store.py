@@ -8,6 +8,7 @@ database-backed store later.
 from pathlib import Path
 from typing import Optional, Dict, List
 import json
+import shutil
 
 
 class JobStore:
@@ -41,8 +42,21 @@ class JobStore:
 		p = self.metadata_path(job_id)
 		if not p.exists():
 			return None
-		with open(p, 'r', encoding='utf-8') as f:
-			return json.load(f)
+		# Defensively handle empty or corrupt metadata files which can appear
+		# during interrupted writes or earlier failures. Return None when the
+		# file is empty or cannot be parsed so callers can treat the job as
+		# not-found/unfinished instead of raising an exception.
+		try:
+			if p.stat().st_size == 0:
+				return None
+			with open(p, 'r', encoding='utf-8') as f:
+				return json.load(f)
+		except json.JSONDecodeError:
+			# Corrupt JSON; treat as missing metadata
+			return None
+		except Exception:
+			# Any other IO error -> None (caller will handle)
+			return None
 
 	def save_results(self, job_id: str, results: Dict) -> Path:
 		job_dir = self.jobs_dir / job_id
@@ -68,4 +82,17 @@ class JobStore:
 			except Exception:
 				continue
 		return jobs
+
+	def delete_job(self, job_id: str) -> bool:
+		"""
+		Delete a job directory and all its contents. Returns True if removed, False if not found.
+		"""
+		p = self.jobs_dir / job_id
+		if not p.exists():
+			return False
+		try:
+			shutil.rmtree(p)
+			return True
+		except Exception:
+			return False
 

@@ -167,7 +167,7 @@ export async function useMockApi<T>(
 ): Promise<ApiResponse<T>> {
   // Simulate network delay
   await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 700));
-  
+
   // Handle different endpoints
   if (endpoint === '/simulations') {
     if (config.method === 'GET') {
@@ -186,20 +186,20 @@ export async function useMockApi<T>(
         shots: config.body?.shots || 0,
         optimizer: config.body?.optimizer || 'Unknown'
       };
-      
+
       mockSimulations.push(newSimulation);
-      
+
       return {
         data: newSimulation as unknown as T,
         status: 201
       };
     }
   }
-  
+
   if (endpoint.startsWith('/simulations/')) {
     const id = endpoint.split('/')[2];
     const simulation = mockSimulations.find(sim => sim.id === id);
-    
+
     if (simulation) {
       return {
         data: simulation as unknown as T,
@@ -213,21 +213,21 @@ export async function useMockApi<T>(
       };
     }
   }
-  
+
   if (endpoint === '/datasets') {
     return {
       data: mockDatasets as unknown as T,
       status: 200
     };
   }
-  
+
   if (endpoint === '/models') {
     return {
       data: mockModels as unknown as T,
       status: 200
     };
   }
-  
+
   // Default response for unknown endpoints
   return {
     data: null as unknown as T,

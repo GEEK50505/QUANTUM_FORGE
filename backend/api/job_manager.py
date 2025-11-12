@@ -4,7 +4,7 @@ Manage job lifecycle with xTB integration.
 import uuid
 import logging
 import threading
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import List, Dict, Optional
 from backend.config import XTBConfig
@@ -61,8 +61,9 @@ class JobManager:
             "email": job_request.get('email', ''),
             "tags": job_request.get('tags', []),
             "status": "QUEUED",
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            # Use explicit UTC timestamps so clients parse times consistently
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "xyz_file": str(xyz_path.relative_to(self.xtb_config.JOBS_DIR))
         }
 
@@ -88,6 +89,24 @@ class JobManager:
         self.logger.info(f"Job status retrieved: {job_id}")
         return job_metadata
 
+    def delete_job(self, job_id: str) -> bool:
+        """
+        Delete a job and its stored artifacts.
+
+        Returns True if deleted, False if job not found or deletion failed.
+        """
+        # best-effort: stop any running threads is out-of-scope here
+        try:
+            removed = self.job_store.delete_job(job_id)
+            if removed:
+                self.logger.info(f"Job {job_id} deleted from store")
+            else:
+                self.logger.warning(f"Attempted to delete job {job_id} but it was not found")
+            return removed
+        except Exception as e:
+            self.logger.error(f"Error deleting job {job_id}: {e}", exc_info=True)
+            return False
+
     def execute_job(self, job_id: str) -> None:
         """
         Execute xTB job.
@@ -102,7 +121,7 @@ class JobManager:
                 return
 
             job_metadata["status"] = "RUNNING"
-            job_metadata["updated_at"] = datetime.utcnow().isoformat()
+            job_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
             self.job_store.save_metadata(job_id, job_metadata)
 
             self.logger.info(f"Starting execution for job {job_id}")
@@ -122,14 +141,14 @@ class JobManager:
                 results_path = self.job_store.save_results(job_id, results)
                 # Update job status to COMPLETED
                 job_metadata["status"] = "COMPLETED"
-                job_metadata["updated_at"] = datetime.utcnow().isoformat()
+                job_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
                 job_metadata["results_file"] = str(results_path.relative_to(self.xtb_config.JOBS_DIR))
                 self.logger.info(f"Job {job_id} completed successfully - Energy: {results['energy']}")
             else:
                 # Update job status to FAILED
                 job_metadata["status"] = "FAILED"
                 job_metadata["error_message"] = results["error"]
-                job_metadata["updated_at"] = datetime.utcnow().isoformat()
+                job_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
                 self.logger.error(f"Job {job_id} failed: {results['error']}")
 
             # Save updated metadata
@@ -143,12 +162,12 @@ class JobManager:
                 existing = self.job_store.load_metadata(job_id) or {}
                 existing["status"] = "FAILED"
                 existing["error_message"] = str(e)
-                existing["updated_at"] = datetime.utcnow().isoformat()
+                existing["updated_at"] = datetime.now(timezone.utc).isoformat()
                 self.job_store.save_metadata(job_id, existing)
             except Exception as update_error:
                 self.logger.error(f"Error updating job status for {job_id}: {str(update_error)}")
 
-    def list_jobs(self, status: str = None, limit: int = 50) -> List[Dict]:
+    def list_jobs(self, status: Optional[str] = None, limit: int = 50) -> List[Dict]:
         """
         List jobs with optional filtering.
 

@@ -3,11 +3,13 @@
 This document describes how to set up a reproducible local development environment for the QUANTUM_FORGE repository.
 
 Prerequisites
+
 - Linux or macOS (tested locally)
 - Python 3.12 (or compatible Python 3.10+)
 - Node.js + npm (for frontend dev server)
 
 Python environment (recommended)
+
 1. Create a virtual environment in the repo root (optional if `.venv` already exists):
 
 ```bash
@@ -34,6 +36,7 @@ python3 -m venv .venv
 ```
 
 Frontend (Node)
+
 1. Change to `frontend/` and install dependencies:
 
 ```bash
@@ -48,6 +51,7 @@ npm run dev
 ```
 
 Useful commands
+
 - Run Python tests:
 
 ```bash
@@ -75,6 +79,7 @@ python3 scripts/add_frontend_headers.py --root frontend/src --extensions .ts .ts
 
 Dev Container (optional)
 ------------------------
+
 We provide a VS Code Dev Container configuration for an easy reproducible developer environment. The devcontainer will provision Python 3.12 and Node 18, create a `.venv`, install Python requirements, and run `npm ci` in the `frontend` folder.
 
 To use it:
@@ -85,12 +90,14 @@ To use it:
 ```
 
 The `postCreateCommand` will run automatically and set up:
+
 - `.venv` virtual environment with `requirements.txt` installed
 - frontend dependencies installed via `npm ci`
 
 If you prefer a manual flow instead of using the devcontainer, follow the Python and Frontend sections above.
 
 Notes & safety
+
 - The repo uses a non-destructive Phase 2 refactor pattern: original files moved to `backend/legacy/` and small shims are left behind to preserve import paths.
 - Always run the test suite after making backend changes.
 

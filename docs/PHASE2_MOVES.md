@@ -3,6 +3,7 @@
 This document records the safe, non-destructive refactor moves performed and the remaining planned items.
 
 Completed (safe, reversible moves)
+
 - Centralized `XTBRunner` implementation into `backend/core/xtb_runner.py`.
   - Created `backend/core/compat.py` exposing a backward-compatible `XTBRunner` API.
   - Added thin shim `backend/simulation/classical_sim/xtb_runner.py` that re-exports `backend.core.compat.XTBRunner`.
@@ -15,10 +16,12 @@ Completed (safe, reversible moves)
 - Fixed small TypeScript issues (Table API, Button size prop, status enum casing) and ensured `tsc --noEmit` passes for the frontend.
 
 Remaining / Planned
+
 - Identify any remaining duplicate modules outside `backend/core` and apply the same safe move pattern (archive -> shim -> tests).
 - Optionally remove `backend/legacy` entries after a monitoring period and CI green runs.
 
 Rollback procedure
+
 1. Revert the commit that contains a problematic move (each move is committed atomically).
 2. If necessary, restore the archived file from `backend/legacy/`.
 

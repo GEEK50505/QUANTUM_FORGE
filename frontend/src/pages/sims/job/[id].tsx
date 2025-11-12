@@ -31,7 +31,7 @@ const JobDetailPage: React.FC = () => {
   // In a real app, we'd get the job ID from the URL params
   // For now, we'll use a placeholder
   const jobId = 'sim-001';
-  
+
   const [job, setJob] = useState<Simulation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'logs' | 'results' | 'visualizations'>('logs');
@@ -114,7 +114,7 @@ const JobDetailPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-6">
               The requested simulation job could not be found.
             </p>
-            <Button 
+            <Button
               variant="primary"
               onClick={() => window.location.hash = '/sims'}
             >
@@ -129,14 +129,14 @@ const JobDetailPage: React.FC = () => {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-6">
-        <Button 
+        <Button
           variant="secondary"
           onClick={() => window.location.hash = '/sims'}
           className="mb-4"
         >
           ← Back to Simulations
         </Button>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -147,7 +147,7 @@ const JobDetailPage: React.FC = () => {
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <Button 
+            <Button
               variant="primary"
               onClick={handleDownloadArtifact}
               aria-label="Download job artifact"
@@ -163,32 +163,34 @@ const JobDetailPage: React.FC = () => {
         <div className="lg:col-span-1">
           <Card>
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Job Metadata</h2>
-            
+
             <div className="space-y-4">
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</h3>
-                <p className="mt-1 text-sm font-medium capitalize" 
-                   style={{ color: job.status === 'completed' ? '#10B981' : 
-                            job.status === 'running' ? '#3B82F6' : 
-                            job.status === 'failed' ? '#EF4444' : '#F59E0B' }}>
+                <p className="mt-1 text-sm font-medium capitalize"
+                  style={{
+                    color: job.status === 'completed' ? '#10B981' :
+                      job.status === 'running' ? '#3B82F6' :
+                        job.status === 'failed' ? '#EF4444' : '#F59E0B'
+                  }}>
                   {job.status}
                 </p>
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Backend Type</h3>
                 <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white capitalize">
                   {job.type}
                 </p>
               </div>
-              
+
               <div>
                 <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Created</h3>
                 <p className="mt-1 text-sm text-gray-900 dark:text-white">
                   {formatDate(job.createdAt)}
                 </p>
               </div>
-              
+
               {job.startedAt && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Started</h3>
@@ -197,7 +199,7 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {job.completedAt && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</h3>
@@ -206,7 +208,7 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {job.duration && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Duration</h3>
@@ -215,7 +217,7 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {job.qubits !== undefined && job.qubits > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Qubits</h3>
@@ -224,7 +226,7 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {job.shots !== undefined && job.shots > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Shots</h3>
@@ -233,7 +235,7 @@ const JobDetailPage: React.FC = () => {
                   </p>
                 </div>
               )}
-              
+
               {job.energy !== undefined && (
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Energy Result</h3>
@@ -245,7 +247,7 @@ const JobDetailPage: React.FC = () => {
             </div>
           </Card>
         </div>
-        
+
         {/* Tabbed Content Area */}
         <div className="lg:col-span-2">
           <Card>
@@ -254,37 +256,34 @@ const JobDetailPage: React.FC = () => {
               <nav className="-mb-px flex space-x-8">
                 <button
                   onClick={() => setActiveTab('logs')}
-                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
-                    activeTab === 'logs'
+                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${activeTab === 'logs'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   Logs
                 </button>
                 <button
                   onClick={() => setActiveTab('results')}
-                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
-                    activeTab === 'results'
+                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${activeTab === 'results'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   Results
                 </button>
                 <button
                   onClick={() => setActiveTab('visualizations')}
-                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${
-                    activeTab === 'visualizations'
+                  className={`whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium ${activeTab === 'visualizations'
                       ? 'border-blue-500 text-blue-600 dark:text-blue-400'
                       : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
-                  }`}
+                    }`}
                 >
                   Visualizations
                 </button>
               </nav>
             </div>
-            
+
             {/* Tab Content */}
             <div className="mt-6">
               {activeTab === 'logs' && (
@@ -301,13 +300,13 @@ const JobDetailPage: React.FC = () => {
                   </div>
                   <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                     <p>
-                      These logs show the execution progress of your simulation job. 
+                      These logs show the execution progress of your simulation job.
                       In a production environment, these would be real-time logs from the backend.
                     </p>
                   </div>
                 </div>
               )}
-              
+
               {activeTab === 'results' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Job Results</h3>
@@ -318,14 +317,14 @@ const JobDetailPage: React.FC = () => {
                   </div>
                   <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                     <p>
-                      This JSON contains the detailed results of your simulation. 
-                      In a production environment, this would be the actual computed data 
+                      This JSON contains the detailed results of your simulation.
+                      In a production environment, this would be the actual computed data
                       that can be used for further analysis.
                     </p>
                   </div>
                 </div>
               )}
-              
+
               {activeTab === 'visualizations' && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Energy Convergence</h3>
@@ -342,8 +341,8 @@ const JobDetailPage: React.FC = () => {
                   </div>
                   <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
                     <p>
-                      This visualization would show the energy convergence during the 
-                      optimization process. In a production environment, this would be 
+                      This visualization would show the energy convergence during the
+                      optimization process. In a production environment, this would be
                       a real plot generated from the simulation data.
                     </p>
                   </div>
@@ -353,7 +352,7 @@ const JobDetailPage: React.FC = () => {
           </Card>
         </div>
       </div>
-      
+
       {/* Download Modal */}
       <Modal
         isOpen={showDownloadModal}

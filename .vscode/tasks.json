@@ -15,22 +15,21 @@
                 "close": false
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Start Vite Dev Server",
+            "type": "shell",
+            "command": ". .venv/bin/activate && cd frontend && npm run dev",
+            "isBackground": true,
+            "runOptions": {
+                "runOn": "folderOpen"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated",
+                "close": false
+            },
+            "problemMatcher": []
         }
-            ,
-            {
-                "label": "Start Vite Dev Server",
-                "type": "shell",
-                "command": ". .venv/bin/activate && cd frontend && npm run dev",
-                "isBackground": true,
-                "runOptions": {
-                    "runOn": "folderOpen"
-                },
-                "presentation": {
-                    "reveal": "silent",
-                    "panel": "dedicated",
-                    "close": false
-                },
-                "problemMatcher": []
-            }
     ]
 }

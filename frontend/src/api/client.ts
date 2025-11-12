@@ -110,6 +110,10 @@ export const listJobs = async (status?: string): Promise<JobResponse[]> => {
     const response = await apiClient.get<JobResponse[]>('/jobs/list', { params })
     return response.data
   } catch (error: any) {
+    // If backend returns 404 for an empty job list, treat it as an empty array
+    if (axios.isAxiosError(error) && error.response && error.response.status === 404) {
+      return []
+    }
     throw new Error(handleApiError(error))
   }
 }

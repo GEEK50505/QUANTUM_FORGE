@@ -31,9 +31,9 @@ const App: React.FC = () => {
   return (
     <div className="App">
       {currentView === 'dashboard' ? (
-        <Dashboard />
+        <Dashboard onViewJob={handleViewJob} />
       ) : (
-        <JobDetails 
+        <JobDetails
           jobId={selectedJobId}
           onBack={handleBackToDashboard}
           onDelete={handleDeleteJob}

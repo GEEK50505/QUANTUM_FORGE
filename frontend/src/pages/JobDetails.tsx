@@ -39,14 +39,14 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
   useEffect(() => {
     if (jobId) {
       fetchJob()
-      
+
       // Auto-refresh if job is still running
       const interval = setInterval(() => {
         if (job?.status === 'running' || job?.status === 'queued') {
           fetchJob()
         }
       }, 2000)
-      
+
       return () => clearInterval(interval)
     }
   }, [jobId, job?.status])
@@ -160,7 +160,7 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
               Job Details: {job.molecule_name || job.job_id}
             </h1>
           </div>
-          
+
           <div className="flex space-x-2">
             <button
               onClick={handleResubmit}
@@ -189,22 +189,21 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
                 Job ID: {job.job_id}
               </p>
             </div>
-            
+
             <div className="mt-4 sm:mt-0">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                job.status === 'queued' 
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${job.status === 'queued'
                   ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
                   : job.status === 'running'
-                  ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                  : job.status === 'completed'
-                  ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
-                  : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-              }`}>
+                    ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                    : job.status === 'completed'
+                      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                }`}>
                 {job.status}
               </span>
             </div>
           </div>
-          
+
           <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
               <p className="text-gray-500 dark:text-gray-400">Created</p>
@@ -223,7 +222,7 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
                 <p className="text-gray-500 dark:text-gray-400">Tags</p>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {job.tags.map((tag, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
                     >
@@ -239,8 +238,8 @@ const JobDetails: React.FC<JobDetailsProps> = ({ jobId, onBack, onDelete }) => {
         {/* Molecule Viewer */}
         {job.xyz_content && (
           <div className="mb-8">
-            <MoleculeViewer 
-              xyz_content={job.xyz_content} 
+            <MoleculeViewer
+              xyz_content={job.xyz_content}
               optimized_geometry={job.results?.properties?.optimized_geometry}
             />
           </div>

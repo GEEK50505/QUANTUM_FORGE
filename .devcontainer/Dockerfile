@@ -1,19 +1,30 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.10
 
-# Install Node.js
-ARG NODE_VERSION="18"
-RUN if [ "${NODE_VERSION}" != "none" ]; then su vscode -c "umask 0002 && . /usr/local/share/nvm/nvm.sh && nvm install ${NODE_VERSION} 2>&1"; fi
+ARG USERNAME=vscode
+ENV DEBIAN_FRONTEND=noninteractive
 
-# Install additional OS packages
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
-    && apt-get -y install --no-install-recommends curl ca-certificates gnupg \
+# Install OS packages and Node.js 20 via NodeSource (ensures npm/node compatibility)
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+    curl ca-certificates gnupg lsb-release build-essential git jq \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Ensure python command is available
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1 || true
+
+WORKDIR /workspace
+
+# Copy helper scripts into image for initial setup
+COPY .devcontainer/postCreateCommand.sh /tmp/postCreateCommand.sh
+COPY .devcontainer/postStartCommand.sh /tmp/postStartCommand.sh
+RUN chmod +x /tmp/postCreateCommand.sh /tmp/postStartCommand.sh || true
 
 # Install Python development tools
 RUN pip install --upgrade pip \
-    && pip install pylint black autopep8 pytest
-
-# Install Node.js development tools
-RUN su vscode -c "npm install -g npm@latest" 2>&1
+    && pip install pylint black autopep8 pytest || true
 
 USER vscode
+
+CMD ["sleep", "infinity"]

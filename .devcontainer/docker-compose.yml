@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  quantum_dev:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    container_name: quantum_dev
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    volumes:
+      - .:/workspace:cached
+      - quantum_conda:/opt/miniconda
+      - quantum_home:/home/vscode
+      - quantum_runs:/workspace/runs
+      - quantum_jobs:/workspace/jobs
+    shm_size: 1g
+
+volumes:
+  quantum_conda:
+  quantum_home:
+  quantum_runs:
+  quantum_jobs:

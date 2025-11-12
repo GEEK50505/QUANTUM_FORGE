@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Simple mock/stub for the `xtb` executable used during local development.
+# It accepts arbitrary arguments and returns success. For simple xTB-style
+# calls that expect output files, this stub will create a minimal fake
+# output file if an input file and output are predictable.
+
+LOGFILE="$(pwd)/logs/xtb_mock.log"
+mkdir -p "$(dirname "$LOGFILE")"
+echo "[xtb_mock] $(date -u +%Y-%m-%dT%H:%M:%SZ) called: $0 $@" >> "$LOGFILE"
+
+# Basic JSON output when --json is requested. This approximates the
+# structure the backend parser expects.
+SHOULD_JSON=0
+INPUT_FILE=""
+for ((i=1;i<=$#;i++)); do
+  a="${!i}"
+  if [[ "$a" == "--json" ]]; then
+    SHOULD_JSON=1
+  elif [[ -f "$a" ]]; then
+    INPUT_FILE="$a"
+  fi
+done
+
+if [[ $SHOULD_JSON -eq 1 ]]; then
+  # Construct deterministic mock results based on timestamp
+  ts=$(date +%s)
+  energy=$(echo "scale=6; -0.5 - ($ts % 100)/1000" | bc)
+  gap=$(echo "scale=6; 0.1 + ($ts % 10)/100" | bc)
+  gradient_norm="0.000123"
+  homo="-0.25"
+  lumo="0.15"
+  charges="[ -0.1, 0.05, 0.05 ]"
+
+  cat <<EOF
+{
+  "total_energy": ${energy},
+  "energy": ${energy},
+  "gradient_norm": ${gradient_norm},
+  "homo": ${homo},
+  "lumo": ${lumo},
+  "homo_lumo_gap": ${gap},
+  "convergence_status": "CONVERGED",
+  "properties": {"optimized_geometry": null},
+  "dipole": 0.0,
+  "charges": ${charges}
+}
+EOF
+  exit 0
+fi
+
+# If first argument looks like an input file, write a tiny fake output
+for arg in "$@"; do
+  if [[ -f "$arg" ]]; then
+    outdir="./runs/mock_run_$(date +%s)"
+    mkdir -p "$outdir"
+    echo "MOCK XTB OUTPUT" > "$outdir/xtb.out"
+    echo "Created mock output in $outdir" >> "$LOGFILE"
+    break
+  fi
+done
+
+# Default: return success
+exit 0

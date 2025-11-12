@@ -9,12 +9,16 @@ import React, { useState } from 'react'
 import JobForm from '../components/JobForm'
 import JobList from '../components/JobList'
 
-const Dashboard: React.FC = () => {
+type DashboardProps = {
+  onViewJob?: (jobId: string) => void
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onViewJob }) => {
   const [jobs, setJobs] = useState<any[]>([])
 
-  const handleViewJob = (jobId: string) => {
-    // Navigation will be handled by the parent component or context
-    console.log('View job:', jobId)
+  const localHandleViewJob = (jobId: string) => {
+    // Fallback navigation behavior if parent doesn't provide a handler
+    console.log('View job (local):', jobId)
   }
 
   return (
@@ -54,7 +58,7 @@ const Dashboard: React.FC = () => {
 
           {/* Right Column - Job List */}
           <div>
-            <JobList onViewJob={handleViewJob} />
+            <JobList onViewJob={onViewJob || localHandleViewJob} />
           </div>
         </div>
       </main>
