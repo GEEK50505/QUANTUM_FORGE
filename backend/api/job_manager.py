@@ -57,6 +57,9 @@ class JobManager:
         job_metadata = {
             "job_id": job_id,
             "molecule_name": job_request['molecule_name'],
+            # Accept optional SMILES and formula from frontend or API clients
+            "molecule_smiles": job_request.get('molecule_smiles') or job_request.get('smiles'),
+            "molecule_formula": job_request.get('molecule_formula'),
             "optimization_level": job_request.get('optimization_level', 'normal'),
             "email": job_request.get('email', ''),
             "tags": job_request.get('tags', []),
@@ -160,14 +163,81 @@ class JobManager:
                     dipole = results_data.get("dipole")
                     
                     # Log molecule to molecules table
+                    # Prefer SMILES or formula provided by the API/client if present
+                    provided_smiles = job_metadata.get('molecule_smiles')
+                    provided_formula = job_metadata.get('molecule_formula')
+
+                    # If SMILES not provided, check if the molecule_name looks like a SMILES pattern
+                    def looks_like_smiles(s: str) -> bool:
+                        if not s:
+                            return False
+                        # Simple heuristic: SMILES contain characters like =#()[]+-/\\@ or digits for rings
+                        return any(c in s for c in "=#()[]+-/\\@0123456789")
+
+                    smiles_to_log = None
+                    if provided_smiles:
+                        smiles_to_log = provided_smiles
+                    elif looks_like_smiles(molecule_name):
+                        smiles_to_log = molecule_name
+
+                    # Compute formula from the XYZ file if not provided
+                    def compute_formula(xyz_path: Path) -> str:
+                        """Simple XYZ->formula helper: counts atoms and returns string like C6H6"""
+                        try:
+                            with open(xyz_path, 'r') as f:
+                                lines = [l.strip() for l in f.readlines() if l.strip()]
+                            # Skip header lines
+                            atom_lines = lines[2:]
+                            counts: dict[str,int] = {}
+                            for ln in atom_lines:
+                                parts = ln.split()
+                                if not parts:
+                                    continue
+                                elem = parts[0]
+                                counts[elem] = counts.get(elem, 0) + 1
+                            # Order: C, H, then alphabetical
+                            order = []
+                            if 'C' in counts:
+                                order.append('C')
+                            if 'H' in counts:
+                                order.append('H')
+                            for k in sorted(k for k in counts.keys() if k not in ['C','H']):
+                                order.append(k)
+                            parts = [f"{el}{counts[el] if counts[el] != 1 else ''}" for el in order]
+                            return ''.join(parts) if parts else ''
+                        except Exception:
+                            return ''
+
+                    formula_to_log = provided_formula
+                    if not formula_to_log:
+                        try:
+                            xyz_path = Path(self.xtb_config.JOBS_DIR) / job_id / (molecule_name + '.xyz')
+                            formula_to_log = compute_formula(xyz_path)
+                        except Exception:
+                            formula_to_log = ''
+
                     success, molecule_id = xtb_runner.log_molecule(
-                        molecule_smiles=molecule_name,
-                        molecule_formula=molecule_name,
+                        molecule_smiles=smiles_to_log or molecule_name,
+                        molecule_formula=formula_to_log or molecule_name,
                         molecule_name=molecule_name
                     )
                     
                     if success and molecule_id:
                         # Log calculation to calculations table
+                        # Compute quality score via the same QualityAssessor used during _assess_and_log_results
+                        try:
+                            qm = xtb_runner.quality_assessor.assess_calculation_quality(
+                                calc_data=results_data,
+                                calc_id=job_id,
+                                computation_metadata={
+                                    'xtb_version': '6.7.1',
+                                    'optimization_level': job_metadata.get('optimization_level', 'normal')
+                                }
+                            )
+                            quality_score = qm.overall_quality_score if qm else None
+                        except Exception:
+                            quality_score = None
+
                         xtb_runner.log_calculation(
                             calc_id=job_id,
                             molecule_id=molecule_id,
@@ -180,7 +250,8 @@ class JobManager:
                             execution_time_seconds=None,
                             xtb_version="6.7.1",
                             convergence_status="converged" if results["success"] else "unknown",
-                            method="GFN2-xTB"
+                            method="GFN2-xTB",
+                            quality_score=quality_score,
                         )
                         self.logger.info(f"Logged molecule (ID: {molecule_id}) and calculation for job {job_id}")
                     else:
@@ -188,6 +259,19 @@ class JobManager:
                 except Exception as logging_error:
                     self.logger.error(f"Error logging molecule/calculation for job {job_id}: {logging_error}", exc_info=True)
             else:
+                # If the runner returned a failure (validation or execution),
+                # attempt to record the error into Supabase so we have a record
+                # of why the job failed. Prefer classifying invalid inputs as
+                # validation_error to help downstream triage.
+                try:
+                    err_msg = results.get('error', '')
+                    err_type = 'validation_error' if 'Invalid XYZ' in (err_msg or '') or 'overlapping' in (err_msg or '').lower() else 'execution_error'
+                    # Try to include molecule SMILES if available for easier lookup
+                    mol_smiles = job_metadata.get('molecule_smiles')
+                    xtb_runner.log_error(calc_id=job_id, error_message=err_msg[:500], error_type=err_type, molecule_smiles=mol_smiles)
+                except Exception as log_exc:
+                    self.logger.debug(f"Could not log failure to Supabase for {job_id}: {log_exc}", exc_info=True)
+
                 # Update job status to FAILED
                 job_metadata["status"] = "FAILED"
                 job_metadata["error_message"] = results["error"]

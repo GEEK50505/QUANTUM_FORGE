@@ -1,0 +1,14 @@
+{
+  "job_id": "water_smiles_test_20251116_111447_cf251276",
+  "molecule_name": "water_smiles_test",
+  "molecule_smiles": "O",
+  "molecule_formula": "H2O",
+  "optimization_level": "normal",
+  "email": "",
+  "tags": [],
+  "status": "FAILED",
+  "created_at": "2025-11-16T11:14:47.659329+00:00",
+  "updated_at": "2025-11-16T11:14:48.478378+00:00",
+  "xyz_file": "water_smiles_test_20251116_111447_cf251276/water_smiles_test.xyz",
+  "error_message": "abnormal termination of xtb\nERROR STOP \n\nError termination. Backtrace:\n#0  0x79bca37b12ba in ???\n#1  0x79bca37b1db9 in ???\n#2  0x5bd362ef85df in ???\n#3  0x5bd36303550c in ???\n#4  0x5bd362eb52d6 in ???\n#5  0x79bca3354ca7 in ???\n#6  0x79bca3354d64 in __libc_start_main\n#7  0x5bd362eb5504 in ???\n#8  0xffffffffffffffff in ???\n"
+}

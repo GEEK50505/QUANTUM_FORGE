@@ -1,0 +1,12 @@
+{
+  "job_id": "manualwatertest2_20251116_114439_35777b46",
+  "molecule_name": "manualwatertest2",
+  "optimization_level": "normal",
+  "email": "",
+  "tags": [],
+  "status": "COMPLETED",
+  "created_at": "2025-11-16T11:44:39.373296+00:00",
+  "updated_at": "2025-11-16T11:44:44.321912+00:00",
+  "xyz_file": "manualwatertest2_20251116_114439_35777b46/manualwatertest2.xyz",
+  "results_file": "manualwatertest2_20251116_114439_35777b46/results.json"
+}

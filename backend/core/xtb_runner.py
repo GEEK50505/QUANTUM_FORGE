@@ -593,6 +593,39 @@ class XTBRunner:
                 self.logger.error(f"Not enough lines for {atom_count} atoms in {xyz_file_path}")
                 return False
             
+            # Parse coordinates and ensure the coordinates look sensible
+            atom_lines = [l.strip() for l in lines[2:2+atom_count]]
+            coords = []
+            for i, ln in enumerate(atom_lines, start=1):
+                parts = ln.split()
+                if len(parts) < 4:
+                    self.logger.error(f"Line {i+2} in XYZ does not have element plus 3 coordinates: '{ln}'")
+                    return False
+                try:
+                    # Parse floats after the element symbol
+                    x = float(parts[1])
+                    y = float(parts[2])
+                    z = float(parts[3])
+                except ValueError:
+                    self.logger.error(f"Non-numeric coordinate in line {i+2} of {xyz_file_path}: '{ln}'")
+                    return False
+                coords.append((x, y, z))
+
+            # Check for extremely short distances (overlapping atoms)
+            min_allowed_distance = 1e-3  # A small tolerance in Angstroms
+            for i in range(len(coords)):
+                xi, yi, zi = coords[i]
+                for j in range(i + 1, len(coords)):
+                    xj, yj, zj = coords[j]
+                    dx = xi - xj
+                    dy = yi - yj
+                    dz = zi - zj
+                    dist2 = dx*dx + dy*dy + dz*dz
+                    if dist2 < (min_allowed_distance * min_allowed_distance):
+                        self.logger.error(f"Very short interatomic distance detected between atoms {i+1} and {j+1} ({dist2:.6e} Angstrom^2) in {xyz_file_path}")
+                        self.logger.error("XYZ file contains overlapping or duplicated coordinates; refusing to run xTB")
+                        return False
+
             self.logger.info(f"XYZ file validation passed: {atom_count} atoms found")
             return True
             
@@ -862,7 +895,8 @@ class XTBRunner:
         execution_time_seconds: Optional[float] = None,
         xtb_version: str = "6.7.1",
         convergence_status: str = "converged",
-        method: str = "GFN2-xTB"
+    method: str = "GFN2-xTB",
+    quality_score: Optional[float] = None,
     ) -> bool:
         """
         Log calculation results to Supabase calculations table.
@@ -908,6 +942,8 @@ class XTBRunner:
                     'logging_timestamp': datetime.utcnow().isoformat(),
                 }
             }
+            if quality_score is not None:
+                payload['quality_score'] = quality_score
 
             result = self.supabase_client.insert('calculations', payload)
             

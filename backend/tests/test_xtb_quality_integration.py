@@ -10,6 +10,7 @@ import json
 import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
+import os
 from backend.core.xtb_runner import XTBRunner, XTBConfig
 from backend.app.db.data_quality import QualityAssessor
 
@@ -223,6 +224,26 @@ class TestXTBExecutionWithQuality:
         tables_called = [call[0][0] for call in calls]
         assert 'data_quality_metrics' in tables_called
         assert 'data_lineage' in tables_called
+
+    def test_validate_input_rejects_overlapping_atoms(self, config):
+        """Ensure validate_input returns False for XYZ with overlapping coordinates"""
+        runner = XTBRunner(config, enable_quality_logging=False)
+        # Create a temp xyz with duplicate coordinates
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.xyz', delete=False) as f:
+            f.write("3\n")
+            f.write("bad water\n")
+            f.write("O 0.0 0.0 0.0\n")
+            f.write("H 0.0 0.0 0.0\n")
+            f.write("H 0.0 0.0 0.0\n")
+            tmpname = f.name
+        try:
+            ok = runner.validate_input(tmpname)
+            assert ok is False
+        finally:
+            try:
+                os.unlink(tmpname)
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

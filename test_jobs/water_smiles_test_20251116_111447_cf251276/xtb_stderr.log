@@ -1,0 +1,13 @@
+abnormal termination of xtb
+ERROR STOP 
+
+Error termination. Backtrace:
+#0  0x79bca37b12ba in ???
+#1  0x79bca37b1db9 in ???
+#2  0x5bd362ef85df in ???
+#3  0x5bd36303550c in ???
+#4  0x5bd362eb52d6 in ???
+#5  0x79bca3354ca7 in ???
+#6  0x79bca3354d64 in __libc_start_main
+#7  0x5bd362eb5504 in ???
+#8  0xffffffffffffffff in ???

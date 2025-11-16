@@ -155,13 +155,31 @@ class SupabaseClient:
         try:
             url = f"{self.base_url}/{table}"
             response = self.session.post(url, json=data, timeout=10)
-            response.raise_for_status()
-            
+            # Log payload on debug for easier diagnosis
+            logger.debug(f"INSERT {table} payload: {json.dumps(data)[:1000]}")
+
+            # If the server returns an error (4xx/5xx) raise and log the response
+            try:
+                response.raise_for_status()
+            except requests.exceptions.HTTPError as he:
+                # Attempt to include server response in logs to help debug 400s
+                resp_text = response.text if hasattr(response, 'text') else str(response)
+                logger.error(f"INSERT {table} failed with status={response.status_code}: {resp_text}")
+                raise
+
             result = response.json()
             return result[0] if isinstance(result, list) else result
         
         except requests.exceptions.RequestException as e:
-            logger.error(f"INSERT {table} failed: {e}")
+            # If response is attached to the exception, try to log it
+            try:
+                resp = e.response
+                if resp is not None:
+                    logger.error(f"INSERT {table} failed: status={resp.status_code} body={resp.text}")
+                else:
+                    logger.error(f"INSERT {table} failed: {e}")
+            except Exception:
+                logger.error(f"INSERT {table} failed: {e}")
             return None
     
     def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> List[Dict]:

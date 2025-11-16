@@ -63,5 +63,6 @@ docker exec quantum_backend bash -lc "cd /app && PYTHONPATH=/app python3 - <<'PY
 ```
 
 Notes:
+
 - This integration test is intentionally minimal: it demonstrates the full logging path without requiring the xTB binary.
 - The frontend build in `docker-compose` is optional: if TypeScript build errors block the compose build on your workstation, start only the `backend` service as shown above.
