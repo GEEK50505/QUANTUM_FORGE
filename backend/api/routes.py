@@ -120,6 +120,15 @@ async def list_jobs(
                 if j.get("status") == "COMPLETED":
                     job_dir = Path(cfg.JOBS_DIR) / j["job_id"]
                     results_path = job_dir / "results.json"
+
+                    # Defensive: if metadata already contains an embedded 'results' key
+                    # but the on-disk results.json is missing or job directory is absent,
+                    # remove the embedded results to avoid returning stale/mismatched data
+                    if j.get('results') and not results_path.exists():
+                        logger.debug(f"Removing embedded results for job {j.get('job_id')} because {results_path} is missing")
+                        j.pop('results', None)
+
+                    # Load results from the job's results.json when available
                     if results_path.exists():
                         with open(results_path, "r") as f:
                             data = json.load(f)

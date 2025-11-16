@@ -6,6 +6,7 @@ Notes: Add a short usage example and expected props/return types.
 */
 
 import React, { useState } from 'react'
+import { SessionProvider } from './context/SessionContext'
 import Dashboard from './pages/Dashboard'
 import JobDetails from './pages/JobDetails'
 
@@ -29,17 +30,19 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="App">
-      {currentView === 'dashboard' ? (
-        <Dashboard onViewJob={handleViewJob} />
-      ) : (
-        <JobDetails
-          jobId={selectedJobId}
-          onBack={handleBackToDashboard}
-          onDelete={handleDeleteJob}
-        />
-      )}
-    </div>
+    <SessionProvider>
+      <div className="App">
+        {currentView === 'dashboard' ? (
+          <Dashboard onViewJob={handleViewJob} />
+        ) : (
+          <JobDetails
+            jobId={selectedJobId}
+            onBack={handleBackToDashboard}
+            onDelete={handleDeleteJob}
+          />
+        )}
+      </div>
+    </SessionProvider>
   )
 }
 

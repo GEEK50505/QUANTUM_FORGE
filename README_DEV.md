@@ -38,3 +38,30 @@ Notes:
 
 - The `quantum_jobs` Docker volume ensures that `/workspace/jobs` persists even if the container is removed or the host reboots.
 - If you have a real xTB binary and want to use it instead, replace the symlink at `/usr/local/bin/xtb` with the path to your binary.
+
+Docker-based integration test (recommended)
+-----------------------------------------
+
+You can use the included `docker-compose.yml` at the repository root to build production-like images for the backend and frontend.
+
+1. Build and start the backend container (it will mount `./jobs` so artifacts are written to your host):
+
+```bash
+docker compose -f docker-compose.yml up -d --build backend
+```
+
+2. Run the integration test that inserts a molecule and a calculation and simulates quality logging into Supabase:
+
+```bash
+./scripts/integration_test.sh
+```
+
+3. Inspect Supabase table counts (this will print the number of rows in relevant tables):
+
+```bash
+docker exec quantum_backend bash -lc "cd /app && PYTHONPATH=/app python3 - <<'PY'\nfrom backend.app.db.supabase_client import get_supabase_client\nc=get_supabase_client()\nprint('data_quality_metrics', len(c.get('data_quality_metrics')))\nprint('data_lineage', len(c.get('data_lineage')))\nprint('molecules', len(c.get('molecules')))\nprint('calculations', len(c.get('calculations')))\nPY"
+```
+
+Notes:
+- This integration test is intentionally minimal: it demonstrates the full logging path without requiring the xTB binary.
+- The frontend build in `docker-compose` is optional: if TypeScript build errors block the compose build on your workstation, start only the `backend` service as shown above.

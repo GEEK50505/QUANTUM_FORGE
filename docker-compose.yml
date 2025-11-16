@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    container_name: quantum_backend
+    env_file:
+      - .env.backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app:cached
+      - ./jobs:/app/jobs:rw
+      - ./runs:/app/runs:rw
+      - ./logs:/app/logs:rw
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+    container_name: quantum_frontend
+    ports:
+      - "5173:80"
+    volumes:
+      - ./frontend:/app/frontend:cached
+    restart: unless-stopped

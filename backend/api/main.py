@@ -39,9 +39,11 @@ def log_requests_middleware(app: FastAPI):
 
 # Validate environment on startup
 logger.info("Validating environment...")
-if not validate_environment():
-    logger.error("Environment validation failed")
-    raise RuntimeError("Environment validation failed")
+try:
+    if not validate_environment():
+        logger.warning("Environment validation failed - running in limited mode (xTB may not be available)")
+except Exception as e:
+    logger.warning(f"Environment validation warning: {e} - running in limited mode (xTB may not be available)")
 
 # Create FastAPI app
 app = FastAPI(

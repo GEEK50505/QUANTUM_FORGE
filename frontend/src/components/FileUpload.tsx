@@ -18,9 +18,12 @@ import { FiUpload, FiX, FiFile } from 'react-icons/fi'
 
 interface FileUploadProps {
   onFileSelect: (content: string, fileName: string) => void
+  // Optional initial content and file name (used when restoring session)
+  initialContent?: string
+  initialFileName?: string
 }
 
-const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
+const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect, initialContent, initialFileName }) => {
   const [isDragging, setIsDragging] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [fileContent, setFileContent] = useState<string>('')
@@ -29,17 +32,17 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   const validateXYZFile = (content: string): boolean => {
     const lines = content.trim().split('\n')
     if (lines.length < 2) return false
-    
+
     // First line should be number of atoms
     const firstLine = lines[0].trim()
     if (!/^\d+$/.test(firstLine)) return false
-    
+
     const atomCount = parseInt(firstLine)
     if (isNaN(atomCount) || atomCount <= 0) return false
-    
+
     // Check if we have enough lines (comment line + atom lines)
     if (lines.length < atomCount + 2) return false
-    
+
     return true
   }
 
@@ -55,6 +58,28 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
     })
   }
 
+  // If parent provided initial content (restored from session), initialize state
+  React.useEffect(() => {
+    if (initialContent && !fileContent) {
+      try {
+        const name = initialFileName || 'restored.xyz'
+        // Create a File object so the component UI can show file metadata
+        const restoredFile = new File([initialContent], name, { type: 'chemical/x-xyz' })
+        setFile(restoredFile)
+        setFileContent(initialContent)
+        setError('')
+        // Inform parent (idempotent)
+        onFileSelect(initialContent, name)
+      } catch (err) {
+        // Some environments may not support File constructor; fall back to setting content only
+        setFile(null)
+        setFileContent(initialContent)
+        onFileSelect(initialContent, initialFileName || '')
+      }
+    }
+    // Only run on mount / when initialContent changes
+  }, [initialContent, initialFileName])
+
   const handleFile = async (selectedFile: File) => {
     if (selectedFile.type !== 'chemical/x-xyz' && !selectedFile.name.endsWith('.xyz')) {
       setError('Please upload a valid .xyz file')
@@ -63,7 +88,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
 
     try {
       const content = await readFileContent(selectedFile)
-      
+
       if (!validateXYZFile(content)) {
         setError('Invalid XYZ file format. File must start with number of atoms.')
         return
@@ -133,11 +158,10 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
   return (
     <div className="w-full">
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200 ${
-          isDragging 
-            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-all duration-200 ${isDragging
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
             : 'border-gray-300 hover:border-blue-400 dark:border-gray-600 dark:hover:border-blue-500'
-        }`}
+          }`}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -151,7 +175,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
           accept=".xyz"
           onChange={handleFileInput}
         />
-        
+
         <div className="flex flex-col items-center justify-center space-y-2">
           <FiUpload className="text-3xl text-gray-400 dark:text-gray-500" />
           <div className="text-center">

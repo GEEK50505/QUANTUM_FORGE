@@ -2,12 +2,15 @@ version: "3.8"
 services:
   quantum_dev:
     build:
-      context: .
+      context: ..
       dockerfile: .devcontainer/Dockerfile
     container_name: quantum_dev
     restart: unless-stopped
     environment:
       - TZ=UTC
+      - JOBS_DIR=/workspace/jobs
+      - WORKDIR=/workspace/runs
+      - LOG_DIR=/workspace/logs
     ports:
       - "8000:8000"
       - "5173:5173"

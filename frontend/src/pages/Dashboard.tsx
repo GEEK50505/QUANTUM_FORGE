@@ -8,6 +8,7 @@ Notes: Add a short usage example and expected props/return types.
 import React, { useState } from 'react'
 import JobForm from '../components/JobForm'
 import JobList from '../components/JobList'
+import SessionDebugger from '../components/SessionDebugger'
 
 type DashboardProps = {
   onViewJob?: (jobId: string) => void
@@ -62,6 +63,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onViewJob }) => {
           </div>
         </div>
       </main>
+
+      {/* Session Debugger - Remove in production */}
+      <SessionDebugger />
     </div>
   )
 }

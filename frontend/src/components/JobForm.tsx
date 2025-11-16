@@ -18,32 +18,41 @@ import { FiSend, FiLoader } from 'react-icons/fi'
 import FileUpload from './FileUpload'
 import { JobSubmitRequest } from '../types'
 import { submitJob } from '../api/client'
+import { useSession } from '../context/SessionContext'
 
 const JobForm: React.FC = () => {
-  const [moleculeName, setMoleculeName] = useState('')
+  const { session, updateEditorState } = useSession()
   const [optimizationLevel, setOptimizationLevel] = useState<'tight' | 'normal'>('normal')
   const [email, setEmail] = useState('')
   const [tags, setTags] = useState('')
-  const [fileContent, setFileContent] = useState('')
   const [fileName, setFileName] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [jobId, setJobId] = useState('')
   const [error, setError] = useState('')
 
+  // Use session state directly - don't duplicate state
+  const moleculeName = session.editorState.moleculeName
+  const fileContent = session.editorState.xyzContent
+
+  const handleMoleculeNameChange = (name: string) => {
+    updateEditorState({ moleculeName: name })
+  }
+
   const handleFileSelect = (content: string, name: string) => {
-    setFileContent(content)
     setFileName(name)
+    // Auto-save XYZ content to session
+    updateEditorState({ xyzContent: content })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!moleculeName.trim()) {
       setError('Molecule name is required')
       return
     }
-    
+
     if (!fileContent) {
       setError('Please upload an XYZ file')
       return
@@ -65,13 +74,12 @@ const JobForm: React.FC = () => {
       const response = await submitJob(request)
       setJobId(response.job_id)
       setSuccess(true)
-      
+
       // Reset form
-      setMoleculeName('')
+      updateEditorState({ moleculeName: '', xyzContent: '' })
       setOptimizationLevel('normal')
       setEmail('')
       setTags('')
-      setFileContent('')
       setFileName('')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit job')
@@ -81,11 +89,10 @@ const JobForm: React.FC = () => {
   }
 
   const resetForm = () => {
-    setMoleculeName('')
+    updateEditorState({ moleculeName: '', xyzContent: '' })
     setOptimizationLevel('normal')
     setEmail('')
     setTags('')
-    setFileContent('')
     setFileName('')
     setError('')
     setSuccess(false)
@@ -95,7 +102,7 @@ const JobForm: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
       <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Submit New Calculation</h2>
-      
+
       {success ? (
         <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
           <div className="flex items-center">
@@ -132,7 +139,7 @@ const JobForm: React.FC = () => {
               type="text"
               id="moleculeName"
               value={moleculeName}
-              onChange={(e) => setMoleculeName(e.target.value)}
+              onChange={(e) => handleMoleculeNameChange(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="e.g., benzene, water"
               disabled={loading}
@@ -143,7 +150,19 @@ const JobForm: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               XYZ File *
             </label>
-            <FileUpload onFileSelect={handleFileSelect} />
+            <FileUpload
+              onFileSelect={handleFileSelect}
+              initialContent={fileContent || session.editorState.xyzContent}
+              initialFileName={fileName || `${session.editorState.moleculeName || 'molecule'}.xyz`}
+            />
+            {fileContent && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  ✅ XYZ content loaded ({fileContent.split('\n').length} lines, ~{(fileContent.length / 1024).toFixed(1)}KB)
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-300 mt-1">Restored from previous session</p>
+              </div>
+            )}
           </div>
 
           <div>
@@ -219,11 +238,10 @@ const JobForm: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                loading
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+              className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${loading
+                ? 'bg-blue-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700'
+                }`}
             >
               {loading ? (
                 <>

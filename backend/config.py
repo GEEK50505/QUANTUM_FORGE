@@ -9,13 +9,19 @@ from pathlib import Path
 class XTBConfig:
     """xTB execution configuration"""
     
-    def __init__(self):
+    def __init__(self, **overrides):
         # Find xTB executable in system PATH
+        # Default configuration; environment variables are respected
         self.XTB_EXECUTABLE = self._find_xtb_executable()
         self.XTB_TIMEOUT = int(os.getenv("XTB_TIMEOUT", "300"))  # 300 seconds default
         self.WORKDIR = os.getenv("WORKDIR", "./runs/")
         self.JOBS_DIR = os.getenv("JOBS_DIR", "./jobs/")
         self.LOG_DIR = os.getenv("LOG_DIR", "./logs/")
+
+        # Override configuration for testing or runtime injection
+        for key, value in overrides.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
         
         # Create directories if they don't exist
         Path(self.WORKDIR).mkdir(parents=True, exist_ok=True)
@@ -25,16 +31,20 @@ class XTBConfig:
         # Validate xTB exists and is executable
         self._validate_xtb()
     
-    def _find_xtb_executable(self) -> str:
+    def _find_xtb_executable(self) -> str | None:
         """Find xTB executable in system PATH"""
         import shutil
         xtb_path = shutil.which("xtb")
         if xtb_path is None:
-            raise RuntimeError("xTB executable not found in PATH")
+            # In dev mode without xTB, return None - will be handled gracefully
+            return None
         return xtb_path
     
     def _validate_xtb(self):
         """Validate that xTB exists and is executable"""
+        if self.XTB_EXECUTABLE is None:
+            # Development mode - xTB not available, but that's okay for API-only work
+            return
         if not os.path.exists(self.XTB_EXECUTABLE):
             raise RuntimeError(f"xTB executable not found at {self.XTB_EXECUTABLE}")
         if not os.access(self.XTB_EXECUTABLE, os.X_OK):

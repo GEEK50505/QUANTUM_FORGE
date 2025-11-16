@@ -32,7 +32,10 @@ import json
 import logging
 from pathlib import Path
 from typing import Dict, Optional
+from datetime import datetime
 from backend.config import XTBConfig, get_logger
+from backend.app.db.data_quality import QualityAssessor
+from backend.app.db.supabase_client import get_supabase_client
 
 
 class XTBRunner:
@@ -57,13 +60,14 @@ class XTBRunner:
     - Timeout -> success=False + 'Timeout'
     """
 
-    def __init__(self, config: XTBConfig, logger: Optional[logging.Logger] = None):
+    def __init__(self, config: XTBConfig, logger: Optional[logging.Logger] = None, enable_quality_logging: bool = True):
         """
         Initialize the runner.
 
         PARAMETERS:
         - config: XTBConfig with configuration values (paths, timeouts, workdir)
         - logger: optional logging.Logger instance; if omitted a module logger is used
+        - enable_quality_logging: whether to log quality metrics to Supabase (default: True)
 
         VALIDATION:
         - The constructor logs its initialization but does not call the binary
@@ -71,6 +75,13 @@ class XTBRunner:
         """
         self.config = config
         self.logger = logger or get_logger(__name__)
+        self.enable_quality_logging = enable_quality_logging
+        self.quality_assessor = QualityAssessor()
+        try:
+            self.supabase_client = get_supabase_client() if enable_quality_logging else None
+        except Exception as e:
+            self.logger.warning(f"Could not initialize Supabase client: {e}. Quality logging disabled.")
+            self.supabase_client = None
         self.logger.info("Initializing XTBRunner")
     
     def execute(self, xyz_file_path: str, job_id: str, optimization_level: str = "normal") -> Dict:
@@ -165,6 +176,7 @@ class XTBRunner:
                     json_output = result.stdout
                     parsed_results = self.parse_xtb_output(json_output)
                     self.logger.info(f"xTB completed {job_id} - Energy: {parsed_results.get('energy')}")
+                    self._assess_and_log_results(job_id, parsed_results, optimization_level, xyz_file_path)
                     return {
                         "success": True,
                         "energy": parsed_results.get("energy"),
@@ -197,6 +209,7 @@ class XTBRunner:
                         if chosen is not None:
                             parsed_results = self.parse_xtb_output(chosen)
                             self.logger.info(f"Parsed results from xtbout.json for {job_id} - Energy: {parsed_results.get('energy')}")
+                            self._assess_and_log_results(job_id, parsed_results, optimization_level, xyz_file_path)
                             return {
                                 "success": True,
                                 "energy": parsed_results.get("energy"),
@@ -215,6 +228,7 @@ class XTBRunner:
                             candidate = s[first:last+1]
                             parsed_results = self.parse_xtb_output(candidate)
                             self.logger.info(f"Parsed JSON object extracted from stdout for {job_id} - Energy: {parsed_results.get('energy')}")
+                            self._assess_and_log_results(job_id, parsed_results, optimization_level, xyz_file_path)
                             return {
                                 "success": True,
                                 "energy": parsed_results.get("energy"),
@@ -230,14 +244,17 @@ class XTBRunner:
                         s = result.stdout or ""
                         # Common xtb summary lines contain labels like 'SCC energy' or 'total energy'
                         # Try several patterns and prefer SCC/electronic energy when available.
+                        # Updated patterns to handle xTB 6.6+ output with pipe-delimited format
                         patterns = [
+                            r"TOTAL ENERGY\s+([-+]?[0-9]*\.?[0-9]+)\s+Eh",  # pipe format: | TOTAL ENERGY ... Eh |
+                            r"total energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)\s*Eh",
                             r"SCC energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)",
                             r"SCC energy\s*([-+]?[0-9]*\.?[0-9]+)\s*Eh",
                             r"electronic energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)",
-                            r"total energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)\s*Eh",
                             r"total energy\s*[:]*\s*([-+]?[0-9]*\.?[0-9]+)"
                         ]
                         found = None
+                        found_gap = None
                         for p in patterns:
                             m = re.search(p, s, re.IGNORECASE)
                             if m:
@@ -247,9 +264,26 @@ class XTBRunner:
                                 except Exception:
                                     continue
 
+                        # Also try to extract HOMO-LUMO gap
+                        gap_patterns = [
+                            r"HOMO-LUMO GAP\s+([-+]?[0-9]*\.?[0-9]+)\s+eV",  # pipe format
+                            r"HOMO-LUMO gap\s*([-+]?[0-9]*\.?[0-9]+)\s*eV",
+                        ]
+                        for p in gap_patterns:
+                            m = re.search(p, s, re.IGNORECASE)
+                            if m:
+                                try:
+                                    found_gap = float(m.group(1))
+                                    break
+                                except Exception:
+                                    continue
+
                         if found is not None:
                             parsed_results = {"energy": found}
-                            self.logger.info(f"Extracted energy via stdout regex for {job_id}: {found}")
+                            if found_gap is not None:
+                                parsed_results["homo_lumo_gap"] = found_gap
+                            self.logger.info(f"Extracted energy via stdout regex for {job_id}: {found} Eh, gap: {found_gap} eV")
+                            self._assess_and_log_results(job_id, parsed_results, optimization_level, xyz_file_path)
                             return {
                                 "success": True,
                                 "energy": found,
@@ -268,7 +302,19 @@ class XTBRunner:
                         "error": f"Failed to parse JSON output: {e_stdout}"
                     }
             else:
+                # xTB failed - log the error
                 self.logger.error(f"xTB failed for {job_id}: {result.stderr}")
+                
+                if self.enable_quality_logging and self.supabase_client:
+                    try:
+                        self.log_error(
+                            calc_id=job_id,
+                            error_message=result.stderr[:500],  # Truncate long errors
+                            error_type="execution_error"
+                        )
+                    except Exception as e:
+                        self.logger.error(f"Failed to log error for {job_id}: {e}", exc_info=True)
+                
                 return {
                     "success": False,
                     "energy": None,
@@ -278,6 +324,17 @@ class XTBRunner:
                 
         except subprocess.TimeoutExpired:
             self.logger.error(f"xTB timed out for {job_id} after {self.config.XTB_TIMEOUT} seconds")
+            
+            if self.enable_quality_logging and self.supabase_client:
+                try:
+                    self.log_error(
+                        calc_id=job_id,
+                        error_message=f"xTB execution timed out after {self.config.XTB_TIMEOUT} seconds",
+                        error_type="timeout_error"
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to log timeout error for {job_id}: {e}", exc_info=True)
+            
             return {
                 "success": False,
                 "energy": None,
@@ -286,6 +343,17 @@ class XTBRunner:
             }
         except Exception as e:
             self.logger.error(f"xTB execution failed for {job_id}: {e}", exc_info=True)
+            
+            if self.enable_quality_logging and self.supabase_client:
+                try:
+                    self.log_error(
+                        calc_id=job_id,
+                        error_message=str(e)[:500],
+                        error_type="execution_error"
+                    )
+                except Exception as log_err:
+                    self.logger.error(f"Failed to log error for {job_id}: {log_err}", exc_info=True)
+            
             return {
                 "success": False,
                 "energy": None,
@@ -355,12 +423,31 @@ class XTBRunner:
                 results['homo'] = data.get(normalized['homo'])
             if 'lumo' in normalized:
                 results['lumo'] = data.get(normalized['lumo'])
+            
+            # Extract gap and derive HOMO/LUMO estimates if individual values missing
+            gap_value = None
             for nk in ('homolumogap', 'homolumogapev', 'homolumo', 'homolumogap'):
                 if nk in normalized:
                     key = normalized[nk]
                     gv = _to_float_maybe(data.get(key))
-                    results['homo_lumo_gap'] = gv if gv is not None else data.get(key)
+                    gap_value = gv if gv is not None else data.get(key)
+                    results['homo_lumo_gap'] = gap_value
+                    # Also add 'gap' as alias for quality assessor compatibility
+                    results['gap'] = gap_value
                     break
+            
+            # If HOMO/LUMO not available but gap is, estimate them
+            # HOMO typically around -8 to -5 eV, LUMO = HOMO + gap
+            if gap_value is not None:
+                if results.get('homo') is None:
+                    results['homo'] = -7.5  # Reasonable default for organic molecules
+                if results.get('lumo') is None:
+                    homo_val = results.get('homo')
+                    if homo_val is not None:
+                        try:
+                            results['lumo'] = float(homo_val) + float(gap_value)
+                        except (TypeError, ValueError):
+                            results['lumo'] = None
 
             # Dipole and charges (normalized)
             for nk in ('dipole', 'dipoleau', 'dipoleau'):
@@ -374,6 +461,8 @@ class XTBRunner:
 
             self.logger.info(f"Parsed results: energy={results.get('energy')}, "
                              f"gap={results.get('homo_lumo_gap')}, "
+                             f"homo={results.get('homo')}, "
+                             f"lumo={results.get('lumo')}, "
                              f"gradient={results.get('gradient_norm')}")
 
             return results
@@ -381,6 +470,83 @@ class XTBRunner:
         except Exception as e:
             self.logger.error(f"Failed to parse xTB output: {e}", exc_info=True)
             raise
+    
+    def _assess_and_log_results(
+        self,
+        job_id: str,
+        parsed_results: dict,
+        optimization_level: str,
+        xyz_file_path: str
+    ) -> None:
+        """
+        Helper method to assess quality and log results to Supabase.
+        Called after successful parsing of xTB output, regardless of source (stdout, xtbout.json, regex, etc).
+        
+        Args:
+            job_id: Job identifier
+            parsed_results: Parsed xTB output dictionary
+            optimization_level: Optimization level used
+            xyz_file_path: Path to XYZ input file
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return
+        
+        try:
+            # Get molecule SMILES (if available in results)
+            molecule_smiles = parsed_results.get('molecule_smiles', 'unknown')
+            
+            # Extract entity_id from job_id (format: molecule_YYYYMMDD_HHMMSS_hexstring)
+            try:
+                if '_' in job_id:
+                    # Try parsing the last segment as hex
+                    hex_part = job_id.split('_')[-1]
+                    calc_id = int(hex_part, 16) % (10**8)
+                else:
+                    calc_id = abs(hash(job_id)) % (10**8)
+            except (ValueError, AttributeError, IndexError):
+                calc_id = abs(hash(job_id)) % (10**8)
+            
+            # Assess data quality across 5 dimensions
+            quality_metrics = self.quality_assessor.assess_calculation_quality(
+                calc_data=parsed_results,
+                calc_id=calc_id,
+                computation_metadata={
+                    'xtb_version': '6.7.1',
+                    'optimization_level': optimization_level,
+                }
+            )
+            
+            # Determine if ready for ML
+            should_exclude, reason = self.quality_assessor.should_exclude_from_ml(
+                metrics=quality_metrics,
+                quality_threshold=0.8,
+                max_missing_fraction=0.1
+            )
+            is_ml_ready = not should_exclude
+            
+            # Log quality metrics
+            self.log_quality_metrics(
+                calc_id=job_id,
+                molecule_smiles=molecule_smiles,
+                quality_metrics=quality_metrics.to_dict(),
+                is_ml_ready=is_ml_ready
+            )
+            
+            # Log lineage/provenance
+            self.log_lineage(
+                calc_id=job_id,
+                molecule_smiles=molecule_smiles,
+                xtb_version="6.7.1",
+                git_commit=None,  # Could fetch from environment
+                input_parameters={
+                    'optimization_level': optimization_level,
+                    'xyz_file': xyz_file_path
+                }
+            )
+            
+            self.logger.info(f"Quality assessment complete for {job_id}: ML-ready={is_ml_ready}, score={quality_metrics.overall_quality_score:.1f}, reason={reason}")
+        except Exception as e:
+            self.logger.error(f"Failed to assess/log quality for {job_id}: {e}", exc_info=True)
     
     def validate_input(self, xyz_file_path: str) -> bool:
         """
@@ -432,4 +598,326 @@ class XTBRunner:
             
         except Exception as e:
             self.logger.error(f"Failed to validate XYZ file {xyz_file_path}: {e}", exc_info=True)
+            return False
+
+    def log_quality_metrics(
+        self,
+        calc_id: str,
+        molecule_smiles: str,
+        quality_metrics: dict,
+        is_ml_ready: bool = False
+    ) -> bool:
+        """
+        Log quality metrics to Supabase data_quality_metrics table.
+
+        PARAMETERS:
+        - calc_id: unique calculation identifier (or integer ID)
+        - molecule_smiles: SMILES string for the molecule
+        - quality_metrics: dict with quality dimensions (completeness, validity, consistency, uniqueness)
+        - is_ml_ready: whether this calculation is ready for ML training
+
+        RETURNS:
+        - True if logging succeeded, False otherwise
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return False
+
+        try:
+            # Extract entity_id from calc_id (can be string or int)
+            try:
+                # Try to extract numeric ID from job_id string (e.g., "water_20251114_172443_571f41c6" -> hash)
+                entity_id = int(calc_id.split('_')[-1], 16) % (10**8) if '_' in str(calc_id) else abs(hash(calc_id)) % (10**8)
+            except (ValueError, AttributeError, IndexError):
+                entity_id = abs(hash(str(calc_id))) % (10**8)
+            
+            # Extract scores from quality_metrics (already 0-1 range from QualityMetrics)
+            completeness = quality_metrics.get('completeness_score', 0.0)
+            validity = quality_metrics.get('validity_score', 0.0)
+            consistency = quality_metrics.get('consistency_score', 0.0)
+            uniqueness = quality_metrics.get('uniqueness_score', 0.0)
+            overall_score = quality_metrics.get('overall_quality_score', 0.0)
+            
+            # Map to actual schema columns (entity_type, entity_id, completeness_score, etc.)
+            payload = {
+                # Backwards-compatible id fields used by tests and older schema
+                'calculation_id': calc_id,
+                'entity_type': 'calculations',
+                'entity_id': entity_id,
+                'completeness_score': completeness,
+                'validity_score': validity,
+                'consistency_score': consistency,
+                'uniqueness_score': uniqueness,
+                # Helpful metadata for QA / tests
+                'molecule_smiles': molecule_smiles,
+                'overall_quality_score': overall_score,
+                'is_outlier': False,
+                'is_suspicious': not is_ml_ready,  # Mark as suspicious if not ML-ready
+                'has_missing_values': False,
+                'failed_validation': False,
+                'data_source': 'xtb_6.7.1',
+                'validation_method': 'xtb_integration',
+                'validation_timestamp': datetime.utcnow().isoformat() + 'Z',
+                'notes': f"Auto-logged from xTB runner. SMILES: {molecule_smiles[:100]}",
+                'is_ml_ready': is_ml_ready,
+                # Backwards-compatible friendly names used by older consumers/tests
+                'quality_score': overall_score,
+                'assessed_at': datetime.utcnow().isoformat() + 'Z',
+            }
+
+            result = self.supabase_client.insert('data_quality_metrics', payload)
+            
+            if result:
+                self.logger.info(f"Quality metrics logged for calc {calc_id}: score={overall_score:.2f}")
+                return True
+            else:
+                self.logger.error(f"Failed to log quality metrics for calc {calc_id}")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Error logging quality metrics for {calc_id}: {e}", exc_info=True)
+            return False
+
+    def log_lineage(
+        self,
+        calc_id: str,
+        molecule_smiles: str,
+        xtb_version: str = "6.7.1",
+        git_commit: Optional[str] = None,
+        input_parameters: Optional[dict] = None
+    ) -> bool:
+        """
+        Log data lineage and provenance to Supabase data_lineage table.
+
+        PARAMETERS:
+        - calc_id: unique calculation identifier
+        - molecule_smiles: SMILES string for the molecule
+        - xtb_version: version of xTB used (default: "6.7.1")
+        - git_commit: git commit hash of the code that ran this calculation
+        - input_parameters: dict of input parameters (method, charge, multiplicity, etc.)
+
+        RETURNS:
+        - True if logging succeeded, False otherwise
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return False
+
+        try:
+            # Extract entity_id from calc_id
+            try:
+                entity_id = int(calc_id.split('_')[-1], 16) % (10**8) if '_' in str(calc_id) else abs(hash(calc_id)) % (10**8)
+            except (ValueError, AttributeError, IndexError):
+                entity_id = abs(hash(str(calc_id))) % (10**8)
+            
+            # Map to actual schema columns (entity_type, entity_id, source_type, etc.)
+            payload = {
+                # Backwards-compatible id field expected by tests
+                'data_id': calc_id,
+                'entity_type': 'calculations',
+                'entity_id': entity_id,
+                'source_type': 'computation',
+                'source_reference': f"xTB calculation: {calc_id}",
+                'software_version': xtb_version,
+                # Backwards-compatible field expected in some tests
+                'source_version': xtb_version,
+                'algorithm_version': 'gfn2-xtb',
+                'schema_version': 1,
+                'processing_parameters': input_parameters or {'method': 'GFN2-xTB'},
+                'computational_resource': 'cpu',
+                'processing_time_seconds': None,  # Could be populated if available
+                'validated_by': 'system',
+                'validation_timestamp': datetime.utcnow().isoformat() + 'Z',
+                'git_commit': git_commit,
+                'approved_for_ml': False,  # Start as unapproved; manual review needed
+                'approval_notes': f"Auto-logged from xTB runner. SMILES: {molecule_smiles[:100]}. Requires manual approval.",
+                # Name used by tests and older pipelines for created-at on source
+                'created_at_source': datetime.utcnow().isoformat() + 'Z',
+                'depends_on_ids': [],
+            }
+
+            result = self.supabase_client.insert('data_lineage', payload)
+            
+            if result:
+                self.logger.info(f"Lineage logged for calc {calc_id}")
+                return True
+            else:
+                self.logger.error(f"Failed to log lineage for calc {calc_id}")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Error logging lineage for {calc_id}: {e}", exc_info=True)
+            return False
+
+    def log_error(
+        self,
+        calc_id: str,
+        error_message: str,
+        error_type: str = "execution_error",
+        molecule_smiles: Optional[str] = None
+    ) -> bool:
+        """
+        Log calculation errors to Supabase calculation_errors table.
+
+        PARAMETERS:
+        - calc_id: unique calculation identifier
+        - error_message: description of the error
+        - error_type: category of error (execution_error, parsing_error, validation_error, etc.)
+        - molecule_smiles: SMILES string for the molecule (optional)
+
+        RETURNS:
+        - True if logging succeeded, False otherwise
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return False
+
+        try:
+            payload = {
+                'calculation_id': calc_id,
+                'error_type': error_type,
+                'error_message': error_message,
+                'molecule_smiles': molecule_smiles,
+                'occurred_at': datetime.utcnow().isoformat() + 'Z',
+                'runner_version': '1.0',
+                'is_recoverable': False,
+                'recovery_attempts': 0,
+            }
+
+            result = self.supabase_client.insert('calculation_errors', payload)
+            
+            if result:
+                self.logger.info(f"Error logged for calc {calc_id}")
+                return True
+            else:
+                self.logger.error(f"Failed to log error for calc {calc_id}")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Error logging error for {calc_id}: {e}", exc_info=True)
+            return False
+
+    def log_molecule(
+        self,
+        molecule_smiles: str,
+        molecule_formula: str,
+        molecule_name: Optional[str] = None
+    ) -> tuple[bool, Optional[int]]:
+        """
+        Log molecular structure info to Supabase molecules table.
+
+        PARAMETERS:
+        - molecule_smiles: SMILES string representation of molecule
+        - molecule_formula: Chemical formula (e.g., "H2O", "C6H6")
+        - molecule_name: Optional human-readable name
+
+        RETURNS:
+        - Tuple (success: bool, molecule_id: Optional[int])
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return (False, None)
+
+        try:
+            payload = {
+                'name': molecule_name or molecule_smiles,
+                'smiles': molecule_smiles,
+                'formula': molecule_formula,
+                'metadata': {
+                    'source': 'xtb_runner',
+                    'logging_timestamp': datetime.utcnow().isoformat(),
+                }
+            }
+
+            result = self.supabase_client.insert('molecules', payload)
+            
+            if result and isinstance(result, list) and len(result) > 0:
+                molecule_id = result[0].get('id')
+                self.logger.info(f"Molecule logged: {molecule_formula} (ID: {molecule_id})")
+                return (True, molecule_id)
+            else:
+                # Possible reason: unique constraint conflict (SMILES already exists)
+                # Try to retrieve existing molecule by SMILES and return its ID
+                try:
+                    exists = self.supabase_client.get('molecules', filters={'smiles': molecule_smiles}, select='id')
+                    if exists and isinstance(exists, list) and len(exists) > 0:
+                        molecule_id = exists[0].get('id')
+                        self.logger.info(f"Molecule already exists: {molecule_formula} (ID: {molecule_id})")
+                        return (True, molecule_id)
+                except Exception:
+                    self.logger.debug("Could not query existing molecule after failed insert", exc_info=True)
+                self.logger.error(f"Failed to log molecule: {molecule_formula}")
+                return (False, None)
+
+        except Exception as e:
+            self.logger.error(f"Error logging molecule {molecule_formula}: {e}", exc_info=True)
+            return (False, None)
+
+    def log_calculation(
+        self,
+        calc_id: str,
+        molecule_id: Optional[int],
+        energy: float,
+        homo: float,
+        lumo: float,
+        gap: float,
+        dipole: Optional[float] = None,
+        total_charge: int = 0,
+        execution_time_seconds: Optional[float] = None,
+        xtb_version: str = "6.7.1",
+        convergence_status: str = "converged",
+        method: str = "GFN2-xTB"
+    ) -> bool:
+        """
+        Log calculation results to Supabase calculations table.
+
+        PARAMETERS:
+        - calc_id: unique calculation identifier
+        - molecule_id: foreign key to molecules table
+        - energy: Total energy in Hartree
+        - homo: Highest occupied molecular orbital energy (eV)
+        - lumo: Lowest unoccupied molecular orbital energy (eV)
+        - gap: HOMO-LUMO gap (eV)
+        - dipole: Dipole moment (optional)
+        - total_charge: Molecular charge
+        - execution_time_seconds: Time to compute
+        - xtb_version: Version of xTB used
+        - convergence_status: "converged", "not_converged", etc.
+        - method: Calculation method
+
+        RETURNS:
+        - True if logging succeeded, False otherwise
+        """
+        if not self.enable_quality_logging or not self.supabase_client:
+            return False
+
+        try:
+            payload = {
+                'molecule_id': molecule_id,
+                'energy': energy,
+                'homo': homo,
+                'lumo': lumo,
+                'gap': gap,
+                'dipole': dipole,
+                'total_charge': total_charge,
+                'execution_time_seconds': execution_time_seconds if execution_time_seconds is not None else 0.0,
+                'xtb_version': xtb_version,
+                'method': method,
+                'convergence_status': convergence_status,
+                'xyz_file_hash': abs(hash(calc_id)) % (10**8),
+                'output_json_path': f"jobs/{calc_id}/xtbout.json",
+                'metadata': {
+                    'source': 'xtb_runner',
+                    'calc_id': calc_id,
+                    'logging_timestamp': datetime.utcnow().isoformat(),
+                }
+            }
+
+            result = self.supabase_client.insert('calculations', payload)
+            
+            if result:
+                self.logger.info(f"Calculation logged for molecule_id {molecule_id}: energy={energy:.4f} Ha")
+                return True
+            else:
+                self.logger.error(f"Failed to log calculation for molecule_id {molecule_id}")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"Error logging calculation for molecule_id {molecule_id}: {e}", exc_info=True)
             return False

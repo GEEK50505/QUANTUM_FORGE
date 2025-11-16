@@ -129,8 +129,10 @@ class JobManager:
             # Get XYZ file path
             xyz_file_path = Path(self.xtb_config.JOBS_DIR) / job_metadata["xyz_file"]
 
-            # Execute xTB calculation
-            xtb_runner = XTBRunner(self.xtb_config, self.logger)
+            # Execute xTB calculation with quality logging enabled
+            self.logger.info(f"Instantiating XTBRunner with enable_quality_logging=True for job {job_id}")
+            xtb_runner = XTBRunner(self.xtb_config, self.logger, enable_quality_logging=True)
+            self.logger.info(f"XTBRunner initialized. supabase_client={'set' if xtb_runner.supabase_client else 'None'}, logging_enabled={xtb_runner.enable_quality_logging}")
             results = xtb_runner.execute(
                 str(xyz_file_path),
                 job_id,
@@ -144,6 +146,47 @@ class JobManager:
                 job_metadata["updated_at"] = datetime.now(timezone.utc).isoformat()
                 job_metadata["results_file"] = str(results_path.relative_to(self.xtb_config.JOBS_DIR))
                 self.logger.info(f"Job {job_id} completed successfully - Energy: {results['energy']}")
+                
+                # Log molecule and calculation metadata to Supabase
+                try:
+                    molecule_name = job_metadata.get("molecule_name", "unknown")
+                    results_data = results.get("results", {})
+                    
+                    # Extract calculation data
+                    energy = results_data.get("energy", results.get("energy", 0.0))
+                    homo = results_data.get("homo", -7.5)
+                    lumo = results_data.get("lumo", homo + results_data.get("gap", 0.0))
+                    gap = results_data.get("gap", results_data.get("homo_lumo_gap", 0.0))
+                    dipole = results_data.get("dipole")
+                    
+                    # Log molecule to molecules table
+                    success, molecule_id = xtb_runner.log_molecule(
+                        molecule_smiles=molecule_name,
+                        molecule_formula=molecule_name,
+                        molecule_name=molecule_name
+                    )
+                    
+                    if success and molecule_id:
+                        # Log calculation to calculations table
+                        xtb_runner.log_calculation(
+                            calc_id=job_id,
+                            molecule_id=molecule_id,
+                            energy=energy,
+                            homo=homo,
+                            lumo=lumo,
+                            gap=gap,
+                            dipole=dipole if isinstance(dipole, float) else None,
+                            total_charge=0,
+                            execution_time_seconds=None,
+                            xtb_version="6.7.1",
+                            convergence_status="converged" if results["success"] else "unknown",
+                            method="GFN2-xTB"
+                        )
+                        self.logger.info(f"Logged molecule (ID: {molecule_id}) and calculation for job {job_id}")
+                    else:
+                        self.logger.warning(f"Failed to log molecule for job {job_id}")
+                except Exception as logging_error:
+                    self.logger.error(f"Error logging molecule/calculation for job {job_id}: {logging_error}", exc_info=True)
             else:
                 # Update job status to FAILED
                 job_metadata["status"] = "FAILED"
