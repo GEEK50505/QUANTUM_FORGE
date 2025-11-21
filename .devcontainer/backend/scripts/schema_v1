@@ -1,0 +1,527 @@
+-- Quantum Forge: Clean-schema full migration (destructive)
+-- WARNING: This script DROPS many tables and recreates them. BACKUP your DB before running.
+-- Run as a privileged role (service_role) or ensure RLS policies allow writes during migration.
+
+BEGIN;
+
+-- ---------------------------
+-- Drop existing tables (safe order via CASCADE)
+-- ---------------------------
+DROP TABLE IF EXISTS public.feature_extraction_log CASCADE;
+DROP TABLE IF EXISTS public.model_training_log CASCADE;
+DROP TABLE IF EXISTS public.ml_dataset_assignments CASCADE;
+DROP TABLE IF EXISTS public.ml_dataset_splits CASCADE;
+DROP TABLE IF EXISTS public.data_anomalies CASCADE;
+DROP TABLE IF EXISTS public.performance_metrics CASCADE;
+DROP TABLE IF EXISTS public.api_usage_logs CASCADE;
+DROP TABLE IF EXISTS public.batch_job_performance CASCADE;
+DROP TABLE IF EXISTS public.molecule_properties_computed CASCADE;
+DROP TABLE IF EXISTS public.user_audit_log CASCADE;
+DROP TABLE IF EXISTS public.user_preferences CASCADE;
+DROP TABLE IF EXISTS public.user_sessions CASCADE;
+DROP TABLE IF EXISTS public.calculation_execution_metrics CASCADE;
+DROP TABLE IF EXISTS public.calculation_errors CASCADE;
+DROP TABLE IF EXISTS public.runs CASCADE;
+DROP TABLE IF EXISTS public.data_lineage CASCADE;
+DROP TABLE IF EXISTS public.data_quality_metrics CASCADE;
+DROP TABLE IF EXISTS public.calculations CASCADE;
+DROP TABLE IF EXISTS public.molecules CASCADE;
+-- If any other legacy tables exist that conflict, drop them here as needed.
+
+-- ---------------------------
+-- Utility: trigger to keep updated_at accurate
+-- ---------------------------
+CREATE OR REPLACE FUNCTION public._update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ---------------------------
+-- molecules
+-- ---------------------------
+CREATE TABLE public.molecules (
+  id BIGSERIAL PRIMARY KEY,
+  name TEXT,
+  smiles TEXT NULL,                         -- canonical SMILES (nullable)
+  formula TEXT NULL,                        -- empirical formula (nullable)
+  metadata JSONB DEFAULT '{}'::jsonb,       -- provenance: {source, inferred, inference_method, confidence}
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Partial unique index: enforce unique non-null smiles
+CREATE UNIQUE INDEX IF NOT EXISTS molecules_smiles_nonnull_key ON public.molecules (smiles) WHERE (smiles IS NOT NULL);
+
+CREATE INDEX IF NOT EXISTS idx_molecules_name ON public.molecules (name);
+CREATE INDEX IF NOT EXISTS idx_molecules_created_at ON public.molecules (created_at DESC);
+
+CREATE TRIGGER trg_molecules_update_updated_at BEFORE UPDATE ON public.molecules
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- calculations
+-- ---------------------------
+CREATE TABLE public.calculations (
+  id BIGSERIAL PRIMARY KEY,
+  job_key TEXT UNIQUE,                       -- original job id / request id (string)
+  user_id UUID NULL,                         -- optional reference to auth.users
+  molecule_id BIGINT REFERENCES public.molecules(id) ON DELETE SET NULL,
+  energy DOUBLE PRECISION,                   -- Hartree (metadata will declare units)
+  homo DOUBLE PRECISION,                     -- eV
+  lumo DOUBLE PRECISION,                     -- eV
+  gap DOUBLE PRECISION,                      -- eV
+  dipole DOUBLE PRECISION,
+  total_charge INTEGER DEFAULT 0,
+  execution_time_seconds DOUBLE PRECISION,
+  xtb_version TEXT,
+  method TEXT,
+  convergence_status TEXT,
+  xyz_file_hash TEXT,
+  output_json_path TEXT,
+  metadata JSONB DEFAULT '{}'::jsonb,        -- include units, runner_version, code_commit, inference notes
+  quality_score DOUBLE PRECISION,
+  is_ml_ready BOOLEAN DEFAULT FALSE,
+  confidence_interval JSONB,                 -- {"lower":..., "upper":...}
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_calculations_molecule_id ON public.calculations (molecule_id);
+CREATE INDEX IF NOT EXISTS idx_calculations_job_key ON public.calculations (job_key);
+CREATE INDEX IF NOT EXISTS idx_calculations_created_at ON public.calculations (created_at DESC);
+
+CREATE TRIGGER trg_calculations_update_updated_at BEFORE UPDATE ON public.calculations
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- calculation_execution_metrics (detailed run metrics & logs)
+-- ---------------------------
+CREATE TABLE public.calculation_execution_metrics (
+  id BIGSERIAL PRIMARY KEY,
+  calculation_id BIGINT NOT NULL REFERENCES public.calculations(id) ON DELETE CASCADE,
+  user_id UUID NULL,
+  xtb_version TEXT,
+  method TEXT,
+  solvation_model TEXT,
+  optimization_level TEXT,
+  wall_time_seconds DOUBLE PRECISION,
+  cpu_time_seconds DOUBLE PRECISION,
+  scf_cycles INTEGER,
+  optimization_cycles INTEGER,
+  convergence_iterations INTEGER,
+  is_converged BOOLEAN,
+  convergence_criterion_met DOUBLE PRECISION,
+  memory_peak_mb DOUBLE PRECISION,
+  stdout_log TEXT,
+  stderr_log TEXT,
+  started_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_calc_metrics_calculation_id ON public.calculation_execution_metrics (calculation_id);
+CREATE INDEX IF NOT EXISTS idx_calc_metrics_started_at ON public.calculation_execution_metrics (started_at);
+CREATE INDEX IF NOT EXISTS idx_calc_metrics_created_at ON public.calculation_execution_metrics (created_at DESC);
+
+-- ---------------------------
+-- calculation_errors
+-- ---------------------------
+CREATE TABLE public.calculation_errors (
+  id BIGSERIAL PRIMARY KEY,
+  calculation_id BIGINT REFERENCES public.calculations(id) ON DELETE CASCADE,
+  user_id UUID NULL,
+  error_type TEXT,        -- 'validation','timeout','convergence','execution','parsing','system','unknown'
+  error_severity TEXT DEFAULT 'error',
+  error_message TEXT,
+  error_code TEXT,
+  stack_trace TEXT,
+  attempt_number INTEGER DEFAULT 1,
+  retry_count INTEGER DEFAULT 0,
+  retry_attempts JSONB DEFAULT '[]'::jsonb,
+  user_action_required BOOLEAN DEFAULT FALSE,
+  resolution_notes TEXT,
+  resolved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_calc_errors_calc_id ON public.calculation_errors (calculation_id);
+CREATE INDEX IF NOT EXISTS idx_calc_errors_error_type ON public.calculation_errors (error_type);
+CREATE TRIGGER trg_calc_errors_update_updated_at BEFORE UPDATE ON public.calculation_errors
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- runs (job-level provenance)
+-- ---------------------------
+CREATE TABLE public.runs (
+  id BIGSERIAL PRIMARY KEY,
+  run_id TEXT UNIQUE,          -- external job id
+  calculation_id BIGINT NULL,  -- optional link to calculations.id
+  molecule_id BIGINT NULL REFERENCES public.molecules(id) ON DELETE SET NULL,
+  user_id UUID NULL,
+  status TEXT,                 -- 'QUEUED','RUNNING','COMPLETED','FAILED'
+  started_at TIMESTAMPTZ,
+  finished_at TIMESTAMPTZ,
+  runtime_seconds DOUBLE PRECISION,
+  user_email TEXT,
+  tags JSONB DEFAULT '[]'::jsonb,
+  metadata JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_runs_run_id ON public.runs (run_id);
+CREATE INDEX IF NOT EXISTS idx_runs_status ON public.runs (status);
+CREATE INDEX IF NOT EXISTS idx_runs_created_at ON public.runs (created_at DESC);
+CREATE TRIGGER trg_runs_update_updated_at BEFORE UPDATE ON public.runs
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- data_quality_metrics (ML filtering & QA)
+-- ---------------------------
+CREATE TABLE public.data_quality_metrics (
+  id BIGSERIAL PRIMARY KEY,
+  calculation_id BIGINT REFERENCES public.calculations(id) ON DELETE CASCADE,
+  job_key TEXT,                       -- store original job_key for traceability
+  entity_type TEXT DEFAULT 'calculations', -- 'calculations','molecules','properties'
+  entity_id BIGINT,
+  completeness_score DOUBLE PRECISION,
+  validity_score DOUBLE PRECISION,
+  consistency_score DOUBLE PRECISION,
+  uniqueness_score DOUBLE PRECISION,
+  overall_quality_score DOUBLE PRECISION,
+  is_outlier BOOLEAN DEFAULT FALSE,
+  is_suspicious BOOLEAN DEFAULT FALSE,
+  has_missing_values BOOLEAN DEFAULT FALSE,
+  failed_validation BOOLEAN DEFAULT FALSE,
+  missing_fields JSONB DEFAULT '[]'::jsonb,     -- e.g. ["homo","dipole"]
+  data_source TEXT,                             -- e.g. "xTB_6.7.1"
+  validation_method TEXT,
+  validation_timestamp TIMESTAMPTZ,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_quality_metrics_calc_id ON public.data_quality_metrics (calculation_id);
+CREATE INDEX IF NOT EXISTS idx_quality_metrics_score ON public.data_quality_metrics (overall_quality_score DESC);
+CREATE TRIGGER trg_quality_update_updated_at BEFORE UPDATE ON public.data_quality_metrics
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- data_lineage (provenance)
+-- ---------------------------
+CREATE TABLE public.data_lineage (
+  id BIGSERIAL PRIMARY KEY,
+  calculation_id BIGINT REFERENCES public.calculations(id) ON DELETE CASCADE,
+  job_key TEXT,
+  entity_type TEXT DEFAULT 'calculations',
+  entity_id BIGINT,
+  source_type TEXT,                 -- 'computation','transformation','import'
+  source_reference TEXT,            -- path or id
+  software_version TEXT,            -- 'xTB_6.7.1'
+  algorithm_version TEXT,           -- 'gfn2-xtb'
+  schema_version INTEGER DEFAULT 1,
+  processing_parameters JSONB DEFAULT '{}'::jsonb,
+  computational_resource TEXT,
+  processing_time_seconds DOUBLE PRECISION,
+  validated_by TEXT,
+  validation_timestamp TIMESTAMPTZ,
+  approved_for_ml BOOLEAN DEFAULT FALSE,
+  approval_notes TEXT,
+  depends_on_ids JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lineage_calc_id ON public.data_lineage (calculation_id);
+CREATE INDEX IF NOT EXISTS idx_lineage_created_at ON public.data_lineage (created_at DESC);
+
+-- ---------------------------
+-- molecule_properties_computed (precomputed ML features)
+-- ---------------------------
+CREATE TABLE public.molecule_properties_computed (
+  id BIGSERIAL PRIMARY KEY,
+  molecule_id BIGINT NOT NULL REFERENCES public.molecules(id) ON DELETE CASCADE,
+  user_id UUID NULL,
+  molecular_weight DOUBLE PRECISION,
+  logp DOUBLE PRECISION,
+  hydrogen_bond_donors INTEGER,
+  hydrogen_bond_acceptors INTEGER,
+  rotatable_bonds INTEGER,
+  topological_polar_surface_area DOUBLE PRECISION,
+  molar_refractivity DOUBLE PRECISION,
+  computed_at TIMESTAMPTZ DEFAULT NOW(),
+  metadata JSONB DEFAULT '{}'::jsonb
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mol_props_unique_molecule ON public.molecule_properties_computed (molecule_id);
+CREATE INDEX IF NOT EXISTS idx_mol_props_computed_at ON public.molecule_properties_computed (computed_at DESC);
+
+-- ---------------------------
+-- feature_extraction_log
+-- ---------------------------
+CREATE TABLE public.feature_extraction_log (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  feature_set_name TEXT NOT NULL,
+  feature_set_version TEXT NOT NULL,
+  extraction_method TEXT,
+  feature_count INTEGER,
+  feature_names TEXT[],
+  calculation_ids BIGINT[] DEFAULT '{}',
+  dataset_split_id BIGINT NULL,
+  missing_features_count INTEGER DEFAULT 0,
+  invalid_features_count INTEGER DEFAULT 0,
+  feature_correlation JSONB,
+  depends_on_version TEXT,
+  changes_from_previous TEXT,
+  extraction_timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_feature_extraction_name ON public.feature_extraction_log (feature_set_name, feature_set_version);
+
+-- ---------------------------
+-- ml_dataset_splits & assignments
+-- ---------------------------
+CREATE TABLE public.ml_dataset_splits (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  dataset_name TEXT NOT NULL,
+  description TEXT,
+  version INTEGER DEFAULT 1,
+  train_fraction DOUBLE PRECISION DEFAULT 0.7,
+  validation_fraction DOUBLE PRECISION DEFAULT 0.15,
+  test_fraction DOUBLE PRECISION DEFAULT 0.15,
+  total_samples INTEGER,
+  train_samples INTEGER,
+  validation_samples INTEGER,
+  test_samples INTEGER,
+  stratified_by TEXT,
+  random_seed INTEGER,
+  filter_criteria JSONB DEFAULT '{}'::jsonb,
+  quality_threshold DOUBLE PRECISION,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.ml_dataset_assignments (
+  id BIGSERIAL PRIMARY KEY,
+  calculation_id BIGINT NOT NULL REFERENCES public.calculations(id) ON DELETE CASCADE,
+  dataset_split_id BIGINT NOT NULL REFERENCES public.ml_dataset_splits(id) ON DELETE CASCADE,
+  split_type TEXT NOT NULL, -- 'train','validation','test'
+  quality_checked BOOLEAN DEFAULT FALSE,
+  quality_check_timestamp TIMESTAMPTZ,
+  quality_issues TEXT[],
+  fold_number INTEGER,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_ml_assign_calc_id ON public.ml_dataset_assignments (calculation_id);
+
+-- ---------------------------
+-- model_training_log
+-- ---------------------------
+CREATE TABLE public.model_training_log (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  model_name TEXT NOT NULL,
+  model_version TEXT NOT NULL,
+  model_type TEXT,
+  dataset_split_id BIGINT NULL,
+  feature_extraction_id BIGINT NULL,
+  hyperparameters JSONB,
+  training_config JSONB,
+  training_start_time TIMESTAMPTZ,
+  training_end_time TIMESTAMPTZ,
+  training_duration_seconds DOUBLE PRECISION,
+  train_loss DOUBLE PRECISION,
+  validation_loss DOUBLE PRECISION,
+  test_loss DOUBLE PRECISION,
+  train_mae DOUBLE PRECISION,
+  validation_mae DOUBLE PRECISION,
+  test_mae DOUBLE PRECISION,
+  train_r2 DOUBLE PRECISION,
+  validation_r2 DOUBLE PRECISION,
+  test_r2 DOUBLE PRECISION,
+  code_commit_hash TEXT,
+  framework TEXT,
+  framework_version TEXT,
+  converged BOOLEAN,
+  early_stopping_applied BOOLEAN,
+  best_validation_epoch INTEGER,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ---------------------------
+-- data_anomalies
+-- ---------------------------
+CREATE TABLE public.data_anomalies (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  anomaly_type TEXT,
+  severity TEXT DEFAULT 'medium',
+  detection_method TEXT,
+  detected_entity_type TEXT,
+  detected_entity_ids BIGINT[] DEFAULT '{}',
+  detected_value DOUBLE PRECISION,
+  expected_value_range JSONB,
+  z_score DOUBLE PRECISION,
+  percentile DOUBLE PRECISION,
+  action_taken TEXT,
+  resolution_notes TEXT,
+  auto_detected BOOLEAN DEFAULT TRUE,
+  reviewed_by TEXT,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ---------------------------
+-- performance_metrics
+-- ---------------------------
+CREATE TABLE public.performance_metrics (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  metric_type TEXT NOT NULL,
+  metric_name TEXT NOT NULL,
+  value DOUBLE PRECISION NOT NULL,
+  unit TEXT,
+  tags JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ---------------------------
+-- api_usage_logs
+-- ---------------------------
+CREATE TABLE public.api_usage_logs (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID NULL,
+  endpoint TEXT NOT NULL,
+  method TEXT NOT NULL,
+  status_code INTEGER,
+  response_time_ms INTEGER,
+  request_size_bytes INTEGER,
+  response_size_bytes INTEGER,
+  error_message TEXT,
+  query_parameters JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ---------------------------
+-- user_sessions / user_preferences / user_audit_log
+-- ---------------------------
+CREATE TABLE public.user_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  session_token TEXT UNIQUE,
+  current_view TEXT,
+  active_molecule_id BIGINT REFERENCES public.molecules(id) ON DELETE SET NULL,
+  active_calculation_id BIGINT REFERENCES public.calculations(id) ON DELETE SET NULL,
+  editor_content JSONB DEFAULT '{}'::jsonb,
+  sidebar_state JSONB DEFAULT '{}'::jsonb,
+  theme_preference TEXT DEFAULT 'auto',
+  ui_preferences JSONB DEFAULT '{}'::jsonb,
+  last_activity TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  expires_at TIMESTAMPTZ
+);
+
+CREATE TABLE public.user_preferences (
+  user_id UUID PRIMARY KEY,
+  display_units TEXT DEFAULT 'hartree',
+  display_precision INTEGER DEFAULT 6,
+  theme TEXT DEFAULT 'auto',
+  language TEXT DEFAULT 'en',
+  default_optimization_level TEXT DEFAULT 'normal',
+  default_solvation TEXT,
+  enable_email_notifications BOOLEAN DEFAULT FALSE,
+  enable_slack_notifications BOOLEAN DEFAULT FALSE,
+  slack_webhook_url TEXT,
+  notification_on_completion BOOLEAN DEFAULT FALSE,
+  notification_on_error BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE public.user_audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  user_id UUID,
+  action TEXT NOT NULL,
+  entity_type TEXT,
+  entity_id BIGINT,
+  changes JSONB,
+  ip_address TEXT,
+  user_agent TEXT,
+  status TEXT DEFAULT 'success',
+  reason TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ---------------------------
+-- batch_job_performance
+-- ---------------------------
+CREATE TABLE public.batch_job_performance (
+  batch_id BIGINT PRIMARY KEY,
+  execution_start_time TIMESTAMPTZ,
+  execution_end_time TIMESTAMPTZ,
+  total_execution_time_seconds DOUBLE PRECISION,
+  successful_jobs INTEGER DEFAULT 0,
+  failed_jobs INTEGER DEFAULT 0,
+  timeout_jobs INTEGER DEFAULT 0,
+  convergence_failure_jobs INTEGER DEFAULT 0,
+  average_job_time_seconds DOUBLE PRECISION,
+  min_job_time_seconds DOUBLE PRECISION,
+  max_job_time_seconds DOUBLE PRECISION,
+  average_memory_mb DOUBLE PRECISION,
+  total_cpu_time_hours DOUBLE PRECISION,
+  parallelization_efficiency DOUBLE PRECISION,
+  error_breakdown JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TRIGGER trg_user_sessions_update_updated_at BEFORE UPDATE ON public.user_sessions
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+CREATE TRIGGER trg_user_prefs_update_updated_at BEFORE UPDATE ON public.user_preferences
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+CREATE TRIGGER trg_batch_update_updated_at BEFORE UPDATE ON public.batch_job_performance
+  FOR EACH ROW EXECUTE FUNCTION public._update_updated_at_column();
+
+-- ---------------------------
+-- Indexes (convenience)
+-- ---------------------------
+CREATE INDEX IF NOT EXISTS idx_qm_by_job_key ON public.calculations (job_key);
+CREATE INDEX IF NOT EXISTS idx_quality_by_entity ON public.data_quality_metrics (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_lineage_by_entity ON public.data_lineage (entity_type, entity_id);
+
+-- ---------------------------
+-- RLS: Enable (optional) and basic policy stubs
+-- ---------------------------
+-- NOTE: Enabling RLS will restrict access. If you run this migration with a non-service role,
+-- make sure to adapt policies or run with a service_role key. The following enables RLS for sensitive tables
+-- and adds simple "allow authenticated to select" policies as placeholders; adapt to your auth model.
+
+-- Enable RLS for tables that will contain user-owned data / ML data
+ALTER TABLE IF EXISTS public.molecules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.calculations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.data_quality_metrics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.data_lineage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.runs ENABLE ROW LEVEL SECURITY;
+
+-- Minimal example policy allowing service_role writes (Supabase service role bypasses RLS),
+-- and allowing authenticated users to SELECT. Adjust to your security model as necessary.
+-- Note: If you prefer to fully manage access via service_role only, you can omit creating policies here.
+
+-- Example: allow authenticated to select molecules (idempotent)
+DROP POLICY IF EXISTS "allow_select_molecules_authenticated" ON public.molecules;
+CREATE POLICY "allow_select_molecules_authenticated" ON public.molecules
+  FOR SELECT
+  USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+-- You will likely want to write more granular policies in production.
+
+COMMIT;

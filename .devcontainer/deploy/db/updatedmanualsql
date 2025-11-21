@@ -1,0 +1,233 @@
+-- =============================================================================
+-- 1. EXTENSIONS & CONFIGURATION
+-- =============================================================================
+-- Enable UUID generation for unique IDs
+create extension if not exists "uuid-ossp";
+
+-- Enable PGMQ for the job queue (Wait a few seconds after running if first time)
+create extension if not exists pgmq;
+
+-- =============================================================================
+-- 2. ENUMS & TYPES
+-- =============================================================================
+-- Define the lifecycle of a scientific job. 
+-- Includes 'submitted' (sent to external QPU) and 'polling' (waiting for QPU results).
+create type public.job_status as enum (
+  'pending',     -- Created by user, not yet processed
+  'queued',      -- Added to pgmq, waiting for worker
+  'processing',  -- Worker has claimed the job
+  'submitted',   -- (Future) Sent to external provider (IBM/AWS)
+  'polling',     -- (Future) Waiting for external provider
+  'completed',   -- Finished successfully
+  'failed',      -- Execution error
+  'cancelled'    -- User cancelled
+);
+
+-- =============================================================================
+-- 3. TABLES
+-- =============================================================================
+
+-- 3.1 PROFILES (Linked to Auth)
+create table public.profiles (
+  id uuid references auth.users(id) on delete cascade not null primary key,
+  full_name text,
+  organization text,
+  -- JSONB for flexible user settings (e.g., default compute resources)
+  preferences jsonb default '{"default_backend": "xtb", "notify_email": true}'::jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- 3.2 MOLECULES (The Input Data)
+create table public.molecules (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  name text not null,
+  description text,
+  
+  -- Chemical Identifiers
+  canonical_smiles text,
+  inchi_key text,
+  
+  -- Geometry: Storing as TEXT to preserve exact formatting (XYZ/SDF)
+  geometry_format text check (geometry_format in ('xyz', 'sdf', 'mol', 'pdb', 'cif')),
+  geometry_content text not null,
+  
+  -- Metadata properties (Charge, Multiplicity)
+  properties jsonb default '{"charge": 0, "multiplicity": 1}'::jsonb,
+  
+  -- Tags for organization
+  tags text, 
+  
+  created_at timestamptz default now()
+);
+
+-- 3.3 JOBS (The Execution Unit - Polymorphic Design)
+create table public.jobs (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  molecule_id uuid references public.molecules(id) on delete restrict not null,
+  
+  -- Routing & Status
+  status job_status default 'pending',
+  queue_name text default 'xtb_default', -- e.g., 'qpu_ibm', 'gpu_inference'
+  
+  -- Provider Tracking (For future QPU integration)
+  provider_id text, -- AWS ARN or IBM Job ID
+  
+  -- Polymorphic Payload (Inputs)
+  -- Stores command line flags for xTB or OpenQASM circuits for QPUs
+  payload jsonb not null default '{}'::jsonb,
+  
+  -- Polymorphic Results (Outputs)
+  -- Stores Energy (float) or Probability Counts (histogram JSON)
+  result jsonb,
+  
+  -- Artifacts (Pointers to Storage)
+  log_url text,      -- Link to full stdout log in Storage
+  output_url text,   -- Link to output geometry/trajectory
+  
+  -- Observability
+  error_message text,
+  started_at timestamptz,
+  finished_at timestamptz,
+  created_at timestamptz default now()
+);
+
+-- =============================================================================
+-- 4. INDEXES (For Performance)
+-- =============================================================================
+-- Speed up dashboard queries filtering by user
+create index idx_molecules_user on public.molecules(user_id);
+create index idx_jobs_user on public.jobs(user_id);
+
+-- Speed up queue polling and status checks
+create index idx_jobs_status on public.jobs(status);
+
+-- Enable fast searching inside JSONB payloads (e.g., find all jobs using method 'gfn2')
+create index idx_jobs_payload on public.jobs using gin (payload);
+create index idx_jobs_result on public.jobs using gin (result);
+
+-- =============================================================================
+-- 5. STORAGE BUCKET SETUP
+-- =============================================================================
+-- Create the bucket for logs and artifacts
+insert into storage.buckets (id, name, public)
+values ('job_artifacts', 'job_artifacts', true)
+on conflict (id) do nothing;
+
+-- =============================================================================
+-- 6. ROW LEVEL SECURITY (RLS)
+-- =============================================================================
+-- 6.1 Enable RLS
+alter table public.profiles enable row level security;
+alter table public.molecules enable row level security;
+alter table public.jobs enable row level security;
+
+-- 6.2 Profiles Policies
+create policy "Public profiles are viewable by everyone"
+on public.profiles for select using (true);
+
+create policy "Users can insert their own profile"
+on public.profiles for insert with check (auth.uid() = id);
+
+create policy "Users can update own profile"
+on public.profiles for update using (auth.uid() = id);
+
+-- 6.3 Molecules Policies
+create policy "Users can view own molecules"
+on public.molecules for select using (auth.uid() = user_id);
+
+create policy "Users can insert own molecules"
+on public.molecules for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own molecules"
+on public.molecules for update using (auth.uid() = user_id);
+
+create policy "Users can delete own molecules"
+on public.molecules for delete using (auth.uid() = user_id);
+
+-- 6.4 Jobs Policies
+create policy "Users can view own jobs"
+on public.jobs for select using (auth.uid() = user_id);
+
+create policy "Users can insert own jobs"
+on public.jobs for insert with check (auth.uid() = user_id);
+
+-- IMPORTANT: We rely on the Python Worker using the SERVICE_ROLE_KEY 
+-- to bypass these policies to update job status and results.
+
+-- 6.5 Storage Policies
+create policy "Give users access to own folder 1u8szr_0" on storage.objects 
+for select to authenticated using (bucket_id = 'job_artifacts' and auth.uid()::text = (storage.foldername(name))[1]);
+
+create policy "Give users upload access to own folder 1u8szr_1" on storage.objects 
+for insert to authenticated with check (bucket_id = 'job_artifacts' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- =============================================================================
+-- 7. QUEUE INFRASTRUCTURE (PGMQ)
+-- =============================================================================
+-- Create the standard processing queue
+select pgmq.create('xtb_job_queue');
+
+-- =============================================================================
+-- 8. ORCHESTRATION TRIGGERS
+-- =============================================================================
+-- Function: Automatically moves a 'queued' job from the table to the PGMQ
+create or replace function public.dispatch_job_to_queue()
+returns trigger as $$
+declare
+  msg_json jsonb;
+  q_name text;
+begin
+  -- Determine queue based on job type (defaults to xtb_job_queue)
+  -- This allows future routing to 'qpu_queue' or 'gpu_queue'
+  q_name := 'xtb_job_queue';
+  
+  -- Construct payload for the worker
+  msg_json := jsonb_build_object(
+    'job_id', new.id,
+    'molecule_id', new.molecule_id,
+    'user_id', new.user_id,
+    'payload', new.payload
+  );
+
+  -- Send to Queue via PGMQ API
+  if new.status = 'queued' then
+    perform pgmq.send(
+      queue_name := q_name,
+      msg := msg_json
+    );
+  end if;
+  
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger: Fires whenever a job is inserted with status 'queued'
+create trigger tr_dispatch_job
+after insert or update of status on public.jobs
+for each row
+when (new.status = 'queued')
+execute function public.dispatch_job_to_queue();
+
+-- =============================================================================
+-- 9. REALTIME & PROFILE TRIGGER
+-- =============================================================================
+-- Enable Realtime for the jobs table so frontend gets live updates
+alter publication supabase_realtime add table public.jobs;
+
+-- Helper: Auto-create profile on User Signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, full_name, preferences)
+  values (new.id, new.raw_user_meta_data->>'full_name', '{"default_backend": "xtb"}');
+  return new;
+end;
+$$ language plpgsql;
+
+-- Trigger: Fires on auth.users insert
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();

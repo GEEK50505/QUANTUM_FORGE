@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  </head>
+  <body class="dark:bg-gray-900">
+    <div id="root"></div>
+    <!-- Simple runtime error overlay to help surface client errors when React fails to render -->
+    <script>
+      (function () {
+        function showOverlay(msg) {
+          try {
+            var existing = document.getElementById('runtime-error-overlay');
+            if (existing) existing.remove();
+            var overlay = document.createElement('div');
+            overlay.id = 'runtime-error-overlay';
+            overlay.style.position = 'fixed';
+            overlay.style.left = '0';
+            overlay.style.top = '0';
+            overlay.style.right = '0';
+            overlay.style.bottom = '0';
+            overlay.style.background = 'rgba(0,0,0,0.85)';
+            overlay.style.color = 'white';
+            overlay.style.zIndex = '99999';
+            overlay.style.padding = '20px';
+            overlay.style.overflow = 'auto';
+            overlay.innerText = msg;
+            document.body.appendChild(overlay);
+          } catch (e) {
+            /* ignore */
+          }
+        }
+
+        window.addEventListener('error', function (ev) {
+          var message = ev && ev.message ? ev.message : String(ev || 'Unknown error');
+          showOverlay('Uncaught error: ' + message + '\n\nSee the browser console for stack trace.');
+        });
+
+        window.addEventListener('unhandledrejection', function (ev) {
+          var reason = ev && ev.reason ? (ev.reason.message || String(ev.reason)) : 'Unhandled rejection';
+          showOverlay('Unhandled promise rejection: ' + reason + '\n\nSee the browser console for details.');
+        });
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

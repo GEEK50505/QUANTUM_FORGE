@@ -1,0 +1,19 @@
+{
+  "summaries": [
+    {
+      "id": "architecture-overview",
+      "title": "High-level architecture decisions (live)",
+      "summary": "Monorepo with clear separation: frontend (TypeScript/Vite), backend (Python services and orchestrator), ai/ for models. All components under active development.",
+      "path": "/docs/ARCHITECTURE_DECISIONS.md",
+      "date": "2025-10-30"
+    }
+    ,
+    {
+      "id": "merge-frontend-template-2025-10-31",
+      "title": "Merge strategy for external frontend template",
+      "summary": "Staged merge using scripts/merge_and_cleanup.py. Preserve frontend templates into frontend/template_sources/<origin> for manual review. Dry-run first; only recommended top-level dirs are copied by default. Status: UNDER ACTIVE DEVELOPMENT.",
+      "path": "/docs/memory_bank.md",
+      "date": "2025-10-31"
+    }
+  ]
+}

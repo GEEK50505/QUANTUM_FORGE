@@ -1,0 +1,21 @@
+cd frontend && npm install
+
+cd backend && python -m uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+sudo apt install uvicorn
+
+cd frontend && npm run dev
+
+cd backend && nohup uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload > ../backend.log 2>&1 &
+
+netstat -tulpn | grep :8000   // what is running on the ports
+
+ps aux | grep uvicorn    // check if backend is running
+
+pip install fastapi
+
+cd backend && uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload &   ///start backend server
+
+npm ci  #start dev server
+
+docker port quantum_dev || true  //check ports

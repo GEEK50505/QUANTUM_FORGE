@@ -1,0 +1,22 @@
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+aiofiles==23.2.1
+
+# Database & ORM
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+supabase==2.0.0
+
+# Data processing
+numpy==1.24.3
+scipy==1.11.2
+pandas==2.0.3
+
+# Utilities
+requests==2.31.0
+click==8.1.7
+
+# xTB is installed via conda, not pip

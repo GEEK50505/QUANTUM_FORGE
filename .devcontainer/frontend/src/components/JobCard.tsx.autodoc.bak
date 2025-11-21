@@ -1,0 +1,25 @@
+/* Backup (auto-generated) of JobCard.tsx before inserting enhanced header */
+
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
+import React from 'react'
+import { FiCopy, FiEye, FiTrash, FiLoader, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi'
+import { JobResponse } from '../types'
+
+interface JobCardProps {
+  job: JobResponse
+  onViewDetails: (jobId: string) => void
+  onDelete: (jobId: string) => void
+}
+
+const JobCard: React.FC<JobCardProps> = ({ job, onViewDetails, onDelete }) => {
+  // original implementation preserved
+  return null as any
+}
+
+export default JobCard

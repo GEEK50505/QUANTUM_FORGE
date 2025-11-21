@@ -13,8 +13,12 @@
     "moduleDetection": "force",
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    }
   },
-  "include": ["src"],
+  "include": ["."],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

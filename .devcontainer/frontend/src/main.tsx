@@ -1,0 +1,31 @@
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import "swiper/swiper-bundle.css";
+import "flatpickr/dist/flatpickr.css";
+import App from "./App.tsx";
+import { AppWrapper } from "./components/common/PageMeta.tsx";
+import { ThemeProvider } from "./context/ThemeContext.tsx";
+import { startMockApi } from "./mocks/browser";
+
+// Start the mock API in development
+// if (import.meta.env.DEV) {
+//   startMockApi();
+// }
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <ThemeProvider>
+      <AppWrapper>
+        <App />
+      </AppWrapper>
+    </ThemeProvider>
+  </StrictMode>,
+);

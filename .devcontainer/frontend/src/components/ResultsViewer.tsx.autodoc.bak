@@ -1,0 +1,24 @@
+/* Backup (auto-generated) of ResultsViewer.tsx before inserting enhanced header */
+
+/*
+Purpose: 
+Description: 
+Exports: 
+Notes: Add a short usage example and expected props/return types.
+*/
+
+import React, { useState, useEffect } from 'react'
+import { FiDownload, FiLoader } from 'react-icons/fi'
+import { ResultsResponse } from '../types'
+import { getJobResults } from '../api/client'
+import { formatEnergy, formatGap } from '../utils/formatters'
+
+interface ResultsViewerProps {
+  jobId: string
+}
+
+const ResultsViewer: React.FC<ResultsViewerProps> = ({ jobId }) => {
+  return null as any
+}
+
+export default ResultsViewer

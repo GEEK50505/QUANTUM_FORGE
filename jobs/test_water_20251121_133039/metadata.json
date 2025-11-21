@@ -1,0 +1,10 @@
+{
+  "job_id": "test_water_20251121_133039",
+  "molecule_name": "water",
+  "xyz_file": "test_water_20251121_133039/water.xyz",
+  "status": "COMPLETED",
+  "optimization_level": "normal",
+  "created_at": "2025-11-21T10:30:39.999079+00:00",
+  "updated_at": "2025-11-21T10:30:42.820809+00:00",
+  "energy": -5.070276993755
+}

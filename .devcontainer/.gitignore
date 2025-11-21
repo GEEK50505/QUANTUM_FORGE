@@ -1,0 +1,58 @@
+# Root ignore rules for QUANTUM_FORGE (UNDER ACTIVE DEVELOPMENT)
+
+# Development Environment Tools
+.devtools/vscode/*
+!.devtools/vscode/settings.json.example
+!.devtools/vscode/launch.json.example
+.devtools/extensions/roo/*
+.devtools/extensions/cline/*
+!.devtools/extensions/*/README.md
+.devtools/openrouter/openrouter_keys.json
+.devtools/openrouter/openrouter_keys_state.json
+.devtools/scripts/*.env
+.devtools/scripts/working_keys.json
+.devtools/scripts/best_key.json
+
+# Build and Runtime
+node_modules/
+**/node_modules/
+dist/
+build/
+/.venv/
+*.pyc
+__pycache__/
+*.egg-info/
+
+# Environment and IDE (added by merge helper). Keep these ignored so they don't get re-added accidentally
+/frontend/template_sources/
+/frontend/templates/
+/react-tailwind-frontend-main-template-files/
+
+# xTB temporary files
+*.xtbtop
+*.xtbopt
+*.xtbrestart
+.xtb/
+
+# Test runs
+test_runs/
+runs/
+
+# Local runtime artifacts and data
+logs/
+data/
+
+# Backup created by refactor script (safe to ignore)
+QUANTUM_FORGE__nested_backup_*
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
