@@ -1,0 +1,109 @@
+name: "CI: Build Postgres image with pgmq staging"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install helpers
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends jq unzip tar docker.io || true
+
+      - name: Find latest successful pgmq staging artifact
+        id: find_artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO=${GITHUB_REPOSITORY}
+          API=https://api.github.com/repos/${REPO}/actions
+          WF_FILE=build-pgmq-staging.yml
+          echo "Retrieving workflow id for $WF_FILE"
+          WF_JSON=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "$API/workflows/$WF_FILE")
+          WF_ID=$(echo "$WF_JSON" | jq -r .id)
+          if [ "$WF_ID" = "null" ] || [ -z "$WF_ID" ]; then
+            echo "No workflow found for $WF_FILE" >&2
+            exit 1
+          fi
+          echo "Found workflow id: $WF_ID"
+          RUN_JSON=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "$API/workflows/$WF_ID/runs?status=success&per_page=1")
+          RUN_ID=$(echo "$RUN_JSON" | jq -r '.workflow_runs[0].id')
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "No successful run found for workflow $WF_FILE" >&2
+            exit 1
+          fi
+          echo "Using run id: $RUN_ID"
+          ART_JSON=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" "$API/runs/$RUN_ID/artifacts")
+          ART_ID=$(echo "$ART_JSON" | jq -r '.artifacts[] | select(.name=="pgmq-staging") | .id')
+          if [ -z "$ART_ID" ] || [ "$ART_ID" = "null" ]; then
+            echo "No pgmq-staging artifact found in run $RUN_ID" >&2
+            exit 1
+          fi
+          echo "Found artifact id: $ART_ID"
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+          echo "artifact_id=$ART_ID" >> $GITHUB_OUTPUT
+
+      - name: Download artifact
+        id: download_artifact
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          API=https://api.github.com/repos/${GITHUB_REPOSITORY}/actions
+          ART_ID=${{ steps.find_artifact.outputs.artifact_id }}
+          ZIP=pgmq-artifact.zip
+          curl -sL -H "Authorization: token ${GITHUB_TOKEN}" -o $ZIP "$API/artifacts/$ART_ID/zip"
+          unzip -l $ZIP
+          mkdir -p pgmq-artifact
+          unzip -q $ZIP -d pgmq-artifact
+          ls -la pgmq-artifact
+
+      - name: Extract staging into build context
+        run: |
+          set -euo pipefail
+          mkdir -p deploy/docker/postgres-pgmq/pgmq-staging
+          if [ -f pgmq-artifact/pgmq-staging.tgz ]; then
+            tar -xzf pgmq-artifact/pgmq-staging.tgz -C deploy/docker/postgres-pgmq/pgmq-staging
+          else
+            echo "pgmq-staging.tgz not found inside artifact" >&2
+            exit 1
+          fi
+          ls -la deploy/docker/postgres-pgmq/pgmq-staging || true
+
+      - name: Build Docker image
+        run: |
+          set -euo pipefail
+          docker build -f deploy/docker/postgres-pgmq/Dockerfile -t quantum_forge-postgres:ci .
+
+      - name: Run container with migrations mounted and wait
+        run: |
+          set -euo pipefail
+          CONTAINER=test-pg-ci
+          docker rm -f $CONTAINER || true
+          docker run --name $CONTAINER -e POSTGRES_PASSWORD=postgres -v $PWD/deploy/migrations:/docker-entrypoint-initdb.d -d quantum_forge-postgres:ci
+          for i in $(seq 1 30); do
+            docker exec $CONTAINER pg_isready -U postgres && break || sleep 2
+          done
+          sleep 5
+
+      - name: Validate pgmq extension and jobs table
+        run: |
+          set -euo pipefail
+          CONTAINER=test-pg-ci
+          docker exec -i $CONTAINER psql -U postgres -d postgres -c "SELECT extname, extversion FROM pg_extension WHERE extname='pgmq';"
+          docker exec -i $CONTAINER psql -U postgres -d postgres -c "SELECT to_regclass('public.jobs') as jobs_regclass;"
+
+      - name: Cleanup container
+        if: always()
+        run: |
+          docker rm -f test-pg-ci || true

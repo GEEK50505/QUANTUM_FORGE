@@ -1,0 +1,104 @@
+name: "Build pgmq Staging"
+
+on:
+  workflow_dispatch:
+    inputs:
+      pgmq_tag:
+        description: 'pgmq git tag or commit to build'
+        required: false
+        default: 'v1.7.0'
+  push:
+    branches:
+      - main
+    tags:
+      - 'pgmq-*'
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  build-staging:
+    runs-on: ubuntu-latest
+    env:
+      PGMQ_TAG: ${{ github.event.inputs.pgmq_tag || 'v1.7.0' }}
+    steps:
+      - name: Checkout pgmq source
+        uses: actions/checkout@v4
+        with:
+          repository: tembo-io/pgmq
+          path: pgmq
+          ref: ${{ env.PGMQ_TAG }}
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            clang \
+            libclang-dev \
+            pkg-config \
+            libssl-dev \
+            ca-certificates \
+            git \
+            curl \
+            postgresql-server-dev-16 || true
+
+      - name: Install Rust toolchain
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          echo "RUSTUP_HOME=$HOME/.rustup" >> $GITHUB_ENV
+          echo "CARGO_HOME=$HOME/.cargo" >> $GITHUB_ENV
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          rustc --version || true
+          cargo --version || true
+
+      - name: Build pgmq into staging tree
+        working-directory: ./pgmq
+        run: |
+          set -euo pipefail
+          OUT=/tmp/pgmq-out
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+          # Prefer classic Makefile builds if present
+          if [ -f Makefile ]; then
+            make && make install DESTDIR="$OUT"
+          elif [ -f postgres/Makefile ]; then
+            (cd postgres && make && make install DESTDIR="$OUT")
+          elif [ -f extension/Makefile ]; then
+            (cd extension && make && make install DESTDIR="$OUT")
+          else
+            # Attempt pgrx/cargo build
+            cargo install --locked cargo-pgrx || true
+            if cargo pgrx --version >/dev/null 2>&1; then
+              cargo pgrx install --release --destination "$OUT" || true
+            fi
+          fi
+          # Validate output
+          if [ -d "$OUT/usr/share/postgresql/16/extension" ] || [ -d "$OUT/usr/lib/postgresql/16/lib" ]; then
+            echo "Staging tree created under $OUT"
+            ls -la "$OUT/usr/share/postgresql/16/extension" || true
+            ls -la "$OUT/usr/lib/postgresql/16/lib" || true
+          else
+            echo "ERROR: build did not produce expected staging files" >&2
+            exit 1
+          fi
+
+      - name: Package staging artifact
+        run: |
+          OUT=/tmp/pgmq-out
+          ART=pgmq-staging.tgz
+          tar -C "$OUT" -czf "$ART" usr/share/postgresql/16/extension usr/lib/postgresql/16/lib || true
+          if [ -f "$ART" ]; then
+            sha256sum "$ART" > pgmq-staging.sha256
+            ls -lh "$ART" pgmq-staging.sha256
+          else
+            echo "No artifact created" >&2
+            exit 1
+          fi
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pgmq-staging
+          path: |
+            pgmq-staging.tgz
+            pgmq-staging.sha256
