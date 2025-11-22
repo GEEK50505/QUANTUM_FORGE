@@ -8,8 +8,23 @@ CREATE EXTENSION IF NOT EXISTS pgmq;
 -- If your pgmq installation uses a different function, adapt accordingly.
 DO $$
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pgmq.queue WHERE queue_name = 'xtb_calculation_queue') THEN
-    PERFORM pgmq.create('xtb_calculation_queue');
+  -- Only attempt to inspect or call pgmq when the extension is installed.
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pgmq') THEN
+    -- If the pgmq.queue relation exists, query it safely; otherwise call
+    -- `pgmq.create` directly so the extension can initialize its objects.
+    IF EXISTS (
+      SELECT 1 FROM pg_catalog.pg_class c
+      JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+      WHERE n.nspname = 'pgmq' AND c.relname = 'queue'
+    ) THEN
+      IF NOT EXISTS (SELECT 1 FROM pgmq.queue WHERE queue_name = 'xtb_calculation_queue') THEN
+        PERFORM pgmq.create('xtb_calculation_queue');
+      END IF;
+    ELSE
+      PERFORM pgmq.create('xtb_calculation_queue');
+    END IF;
+  ELSE
+    RAISE NOTICE 'pgmq extension not installed; skipping queue creation';
   END IF;
 END$$;
 
@@ -29,7 +44,17 @@ CREATE TABLE IF NOT EXISTS public.jobs (
 
 -- Indexes to speed common queries
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON public.jobs (status);
-CREATE INDEX IF NOT EXISTS idx_jobs_batch ON public.jobs (batch_id);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'jobs' AND column_name = 'batch_id'
+  ) THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_jobs_batch ON public.jobs (batch_id)';
+  ELSE
+    RAISE NOTICE 'Skipping idx_jobs_batch creation: column batch_id missing';
+  END IF;
+END$$;
 
 -- Example RLS policy placeholders (enable and tailor for your setup)
 -- ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;

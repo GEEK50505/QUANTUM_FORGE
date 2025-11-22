@@ -23,7 +23,13 @@ DO $$ BEGIN
 END$$;
 
 -- 2) Enable pgvector extension for embeddings
-CREATE EXTENSION IF NOT EXISTS vector;
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_available_extensions WHERE name = 'vector' ) THEN
+        CREATE EXTENSION IF NOT EXISTS vector;
+    END IF;
+END
+$$;
 
 -- 3) Create or alter the calculations table to a hybrid-compatible master table
 -- Note: This migration will CREATE the table if it does not exist. If your
@@ -31,7 +37,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- adapt the migration before applying in production. We use UUIDs to future-proof.
 CREATE TABLE IF NOT EXISTS calculations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    molecule_id UUID REFERENCES molecules(id) NOT NULL,
+    molecule_id UUID NOT NULL,
 
     -- Execution Metadata
     method calculation_method NOT NULL DEFAULT 'xtb_gfn2',
@@ -66,16 +72,22 @@ ALTER TABLE IF EXISTS molecules
     ADD COLUMN IF NOT EXISTS parent_molecule_id UUID REFERENCES molecules(id),
     ADD COLUMN IF NOT EXISTS xyz_structure TEXT;
 
-CREATE INDEX IF NOT EXISTS idx_molecules_embedding ON molecules USING ivfflat (embedding) WITH (lists = 100);
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'molecules') THEN
+        EXECUTE 'CREATE INDEX IF NOT EXISTS idx_molecules_embedding ON molecules USING ivfflat (embedding) WITH (lists = 100)';
+    END IF;
+END
+$$;
 
 -- 5) Create agent_decisions ledger table
 CREATE TABLE IF NOT EXISTS agent_decisions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     agent_version TEXT NOT NULL,
-    input_molecule_id UUID REFERENCES molecules(id),
+    input_molecule_id UUID,
     action_taken TEXT,
     reasoning TEXT,
-    resulting_calculation_id UUID REFERENCES calculations(id),
+    resulting_calculation_id UUID,
     reward_score FLOAT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -85,7 +97,13 @@ COMMENT ON TABLE calculations IS 'Master calculations table designed for hybrid 
 COMMENT ON COLUMN calculations.active_space_config IS 'JSONB storing active space (orbital indices, electrons, multiplicity) for QPU handoff';
 COMMENT ON COLUMN calculations.quantum_metadata IS 'JSONB storing QPU backend, shots, ansatz, qubits_used, etc.';
 
-COMMENT ON TABLE molecules IS 'Molecules table augmented with vector embedding and provenance for agentic workflows';
-COMMENT ON COLUMN molecules.embedding IS 'pgvector embedding (1024 dim) for similarity search';
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'molecules') THEN
+        EXECUTE 'COMMENT ON TABLE molecules IS ''Molecules table augmented with vector embedding and provenance for agentic workflows''';
+        EXECUTE 'COMMENT ON COLUMN molecules.embedding IS ''pgvector embedding (1024 dim) for similarity search''';
+    END IF;
+END
+$$;
 
 COMMENT ON TABLE agent_decisions IS 'Ledger of agent decisions and reasoning used for RL/agentic swarm training';

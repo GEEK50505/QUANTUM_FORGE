@@ -14,7 +14,15 @@ DROP TYPE IF EXISTS job_status CASCADE;
 
 -- Ensure extensions available
 CREATE EXTENSION IF NOT EXISTS pgcrypto; -- for gen_random_uuid()
-CREATE EXTENSION IF NOT EXISTS vector;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extension_versions WHERE name = 'vector') THEN
+    CREATE EXTENSION IF NOT EXISTS vector;
+  ELSE
+    RAISE NOTICE 'pgvector not installed on system; will create molecules.embedding as BYTEA and skip ivfflat index';
+  END IF;
+END
+$$;
 
 -- Recreate enums with the desired future-proof values
 CREATE TYPE calculation_method AS ENUM (
@@ -34,7 +42,7 @@ CREATE TABLE molecules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   smiles TEXT NOT NULL,
   xyz_structure TEXT,
-  embedding vector(1024),
+  embedding BYTEA,
   source_type TEXT CHECK (source_type IN ('human_upload', 'agent_generated', 'mutation')),
   parent_molecule_id UUID REFERENCES molecules(id),
   created_at TIMESTAMPTZ DEFAULT NOW()
@@ -42,7 +50,15 @@ CREATE TABLE molecules (
 
 -- IVFFLAT index for pgvector (tune lists as needed)
 -- Note: ivfflat requires the table to be populated and analyzed before it is effective.
-CREATE INDEX idx_molecules_embedding ON molecules USING ivfflat (embedding) WITH (lists = 100);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_available_extension_versions WHERE name = 'vector') THEN
+    EXECUTE 'CREATE INDEX IF NOT EXISTS idx_molecules_embedding ON molecules USING ivfflat (embedding) WITH (lists = 100)';
+  ELSE
+    RAISE NOTICE 'pgvector not installed; skipping ivfflat index creation';
+  END IF;
+END
+$$;
 
 -- Create master calculations table for hybrid compatibility
 CREATE TABLE calculations (
